@@ -1,0 +1,29 @@
+# python
+.pytest_cache
+*__pycache__
+python
+htmlcov
+.coverage
+
+# scripts
+*.bat
+*.sh
+
+# textures
+*.dds
+!tests/test.dds
+*.tga
+*.png
+
+# blender
+*.blend*
+
+# binary
+*.dll
+*.so
+*.dylib
+*.exe
+
+# doc
+*.txt
+!changelog.txt

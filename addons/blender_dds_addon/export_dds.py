@@ -94,7 +94,7 @@ class DDSOptions(PropertyGroup):
 
     dds_format: EnumProperty(
         name='DDS format',
-        items=((fmt, get_alt_fmt(fmt), '') for fmt in fmt_list if is_supported(fmt)),
+        items=[(fmt, get_alt_fmt(fmt), '') for fmt in fmt_list if is_supported(fmt)],
         description='DXGI format for DDS',
         default='BC1_UNORM'
     )

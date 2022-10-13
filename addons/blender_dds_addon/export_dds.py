@@ -49,10 +49,10 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
 
             if texconv is None:
                 texconv = Texconv()
-            
+
             temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
-                                                invert_normals=invert_normals, no_mip=no_mip,
-                                                allow_slow_codec=allow_slow_codec)
+                                              invert_normals=invert_normals, no_mip=no_mip,
+                                              allow_slow_codec=allow_slow_codec)
             if temp_dds is None:
                 raise RuntimeError('Failed to convert texture.')
             shutil.copyfile(temp_dds, file)

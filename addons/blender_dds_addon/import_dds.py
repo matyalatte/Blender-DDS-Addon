@@ -46,7 +46,6 @@ def load_dds(file, invert_normals=False, texconv=None):
     """
     texture_name = os.path.basename(file)[:-4]
 
-
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp = os.path.join(temp_dir, "temp.dds")

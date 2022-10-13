@@ -1,4 +1,4 @@
-"""UI panel and operator to export .uasset files."""
+"""UI panel and operator to export DDS files."""
 
 import os
 import time
@@ -19,12 +19,15 @@ from .texconv import Texconv
 
 
 def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
-             allow_slow_codec=False, no_err=False, texconv=None):
-    """Export a texture form .uasset file.
+             allow_slow_codec=False, texconv=None):
+    """Export a texture as DDS.
 
     Args:
-        file (string): file path to .uasset file
-        invert_normals (bool): Flip y axis if the texture is normal map.
+        file (string): file path to .dds file
+        dds_fmt (string): DXGI format (e.g. BC1_UNORM)
+        invert_normals (bool): Flip y axis for BC5 textures.
+        no_mip (bool): Disable mipmap generation.
+        allow_slow_codec: Allow CPU codec for BC6 and BC7.
         texconv (Texconv): Texture converter for dds.
 
     Returns:
@@ -33,34 +36,33 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
     file_format = tex.file_format
     filepath_raw = tex.filepath_raw
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        if is_hdr(dds_fmt):
-            temp = os.path.join(temp_dir, 'temp.hdr')
-            tex.file_format = 'HDR'
-        else:
-            temp = os.path.join(temp_dir, 'temp.tga')
-            tex.file_format = 'TARGA_RAW'
-        tex.filepath_raw = temp
-        tex.save()
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            if is_hdr(dds_fmt):
+                temp = os.path.join(temp_dir, 'temp.hdr')
+                tex.file_format = 'HDR'
+            else:
+                temp = os.path.join(temp_dir, 'temp.tga')
+                tex.file_format = 'TARGA_RAW'
+            tex.filepath_raw = temp
+            tex.save()
 
-        if texconv is None:
-            texconv = Texconv()
-        try:
+            if texconv is None:
+                texconv = Texconv()
+            
             temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
-                                              invert_normals=invert_normals, no_mip=no_mip,
-                                              allow_slow_codec=allow_slow_codec)
-            if temp_dds is None:  # if texconv doesn't exist
+                                                invert_normals=invert_normals, no_mip=no_mip,
+                                                allow_slow_codec=allow_slow_codec)
+            if temp_dds is None:
                 raise RuntimeError('Failed to convert texture.')
             shutil.copyfile(temp_dds, file)
-
-        except Exception as e:
-            if not no_err:
-                raise e
-            print(f'Failed to load {file}')
-            tex = None
-
         tex.file_format = file_format
         tex.filepath_raw = filepath_raw
+
+    except Exception as e:
+        tex.file_format = file_format
+        tex.filepath_raw = filepath_raw
+        raise e
 
     return tex
 

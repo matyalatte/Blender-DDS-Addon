@@ -22,11 +22,15 @@ You can download zip files from [the release page](https://github.com/matyalatte
 
 If you want to use the addon on other platforms, you need to build [Texconv](https://github.com/matyalatte/Texconv-Custom-DLL) by yourself.
 
+## Getting Started
+[Getting Started · matyalatte/Blender-DDS-Addon Wiki](https://github.com/matyalatte/Blender-DDS-Addon/wiki/Getting-Started)
+
 ## Supported Formats
 The addon supports most of the 2D formats.  
 (Cube maps and 3D textures are unsupported.)  
   
-Here is a list of supported formats.
+Here is a list of supported formats.  
+
 <details>
 <summary>Supported DXGI Formats</summary>
 
@@ -90,7 +94,7 @@ Here is a list of supported formats.
 [Texconv](https://github.com/microsoft/DirectXTex/wiki/Texconv)
 is a texture converter developed by Microsoft.  
 It's the best DDS converter as far as I know.  
-And [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL) is a cross-platform implementation for [Texconv](https://github.com/microsoft/DirectXTex/wiki/Texconv).  
+And [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL) is a cross-platform implementation I made.  
 The official Texconv only supports Windows but you can use it on Unix systems.  
 
 ## License

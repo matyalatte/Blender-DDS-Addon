@@ -191,8 +191,8 @@ def get_dds_format(fmt):
     for pxlfmt, dxgi in DDS_PIXELFORMAT_TO_DXGI:
         if fmt in pxlfmt:
             return dxgi
-    print("Failed to detect dxgi format. It'll be loaded as a DXT1 texture.")
-    return DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM
+    print("Failed to detect dxgi format. It'll be loaded as a B8G8R8A8 texture.")
+    return DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
 
 
 def is_hdr(name):

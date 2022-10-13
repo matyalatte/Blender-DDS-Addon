@@ -3,10 +3,10 @@
 Notes:
     Registration
     1. Make a new folder and rename it to 'modules'
-    2. Unzip blender_uasset_addon*.zip
-    3. Put blender_uasset_addon (not a zip!) in the modules folder
+    2. Unzip blender_dds_addon*.zip
+    3. Put blender_dds_addon (not a zip!) in the modules folder
     4. Launch Blender
-    5. Uninstall blender uasset addon if you installed
+    5. Uninstall blender dds addon if you installed
     6. Go to Edit->Preferences->File Paths->Data->Scripts
     7. Type the directory has the modules folder
     8. Close the preferences window

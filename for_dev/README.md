@@ -10,14 +10,14 @@ There are some python scripts to test the addon.
 [Flake8](https://flake8.pycqa.org/en/latest/) is a tool for style guide enforcement.<br>
 It will check if you are following [PEP8](https://peps.python.org/pep-0008/).<br>
 Install it with `pip install flake8`.<br>
-Then, type `flake8` in `./Blender-Uasset-Addon`.<br>
+Then, type `flake8` in `./Blender-DDS-Addon`.<br>
 You should get no messages from flake8.
 
 ## Pylint
 [Pylint](https://pylint.pycqa.org/en/latest/) is a static code analyser.<br>
 It can rate your scripts.<br>
 Install it with `pip install pylint`.<br>
-Then, type `python for_dev\lint.py --path=addons\blender_uasset_addon` in `./Blender-Uasset-Addon`.<br>
+Then, type `python for_dev\lint.py --path=addons\blender_dds_addon` in `./Blender-DDS-Addon`.<br>
 You will get results like `PyLint Passed | Score:...`.<br>
 The score should be more than 7.<br>
 
@@ -27,10 +27,10 @@ You can use bpy with pytest.<br>
 First, install requirements in your python environment like this.<br>
 
 ```
-pip install pytest pytest-blender pytest-cov
+pip install pytest pytest-blender
 ```
 
-Then, install pytest and pytest-cov in Blender's python environment like this.<br>
+Then, install pytest in Blender's python environment like this.<br>
 ```
 REM This is for Windows. See pytest-blender's document for linux and mac.
 set BLENDER=C:\Program Files\Blender Foundation\Blender 3.0
@@ -38,13 +38,13 @@ set PYTHON_PATH=%BLENDER%\3.0\python\bin\python.exe
 set SITE_PACK=%BLENDER%\3.0\python\lib\site-packages
 
 "%PYTHON_PATH%" -m ensurepip
-"%PYTHON_PATH%" -m pip install pytest pytest-cov -t "%SITE_PACK%" --upgrade
+"%PYTHON_PATH%" -m pip install pytest -t "%SITE_PACK%" --upgrade
 ```
 
 And then, you can use pytest with bpy.
 ```
 set BLENDER_EXE=C:\Program Files\Blender Foundation\Blender 3.0\blender.exe
-pytest tests\ -svv --blender-executable "%BLENDER_EXE%" --cov-report html --cov-report term:skip-covered
+pytest tests\ -svv --blender-executable "%BLENDER_EXE%"
 ```
 
 ## Github Actions
@@ -52,7 +52,7 @@ pytest tests\ -svv --blender-executable "%BLENDER_EXE%" --cov-report html --cov-
 You can run scripts on remote servers for your repositories.<br>
 There are 2 workflows for the addon.
 
-- CI: Run flake8, pylint, and pytest to check your codes.
+- Test: Run flake8, pylint, and pytest to check your codes.
 - Build: Build Texconv and zip it with python scripts.
 
 See here if you want to use the workflows.<br>

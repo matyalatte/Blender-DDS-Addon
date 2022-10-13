@@ -1,4 +1,4 @@
-"""UI panel and operator to import .uasset files."""
+"""UI panel and operator to import DDS files."""
 
 import os
 import time
@@ -33,7 +33,7 @@ def load_tga(file, name, color_space='Non-Color'):
     return tex
 
 
-def load_dds(file, invert_normals=False, no_err=False, texconv=None):
+def load_dds(file, invert_normals=False, texconv=None):
     """Import a texture form .uasset file.
 
     Args:
@@ -46,21 +46,23 @@ def load_dds(file, invert_normals=False, no_err=False, texconv=None):
     """
     texture_name = os.path.basename(file)[:-4]
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp = os.path.join(temp_dir, "temp.dds")
-        shutil.copyfile(file, temp)
-        if texconv is None:
-            texconv = Texconv()
-        try:
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = os.path.join(temp_dir, "temp.dds")
+            shutil.copyfile(file, temp)
+            if texconv is None:
+                texconv = Texconv()
+
             temp_tga = texconv.convert_to_tga(temp, out=temp_dir, invert_normals=invert_normals)
             if temp_tga is None:  # if texconv doesn't exist
                 raise RuntimeError('Failed to convert texture.')
             tex = load_tga(temp_tga, name=texture_name)
-        except Exception as e:
-            if not no_err:
-                raise e
-            print(f'Failed to load {file}')
-            tex = None
+
+    except Exception as e:
+        if tex is not None:
+            bpy.data.images.remove(tex)
+        raise e
 
     return tex
 

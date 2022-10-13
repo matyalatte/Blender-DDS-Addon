@@ -2,7 +2,7 @@
 
 Notes:
     Install pylint with "pip install pylint"
-    Then, run "python for_dev/lint.py --path=blender_uasset_addon"
+    Then, run "python for_dev/lint.py --path=blender_dds_addon"
     You should get no errors.
 """
 import argparse

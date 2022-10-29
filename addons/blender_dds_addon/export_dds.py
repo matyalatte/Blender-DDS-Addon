@@ -120,6 +120,24 @@ class DDSOptions(PropertyGroup):
         default=False,
     )
 
+    cubemap_suffix: EnumProperty(
+        name='Suffix Set for Cubemap',
+        items=[
+            ('AXIS', 'Axis', 'Use "x_pos", "x_neg", "y_pos", "y_neg", "z_pos" and "z_neg"'),
+            ('NUMBER', 'Number', 'Use "0", "1", "2", "3", "4" and "5"'),
+            ('BLENDER', 'Blender', 'Use "left", "right", "front", "back", "top" and "bottom" (Right-handed, Z-up)'),
+            ('3DSMAX', '3ds Max', 'Use "right", "left", "back", "front", "top" and "bottom" (Right-handed, Z-up)'),
+            ('MAYA', 'Maya', 'Use "right", "left", "top", "bottom", "front" and "back" (Right-handed, Y-up)'),
+            ('UNITY', 'Unity', 'Use "left", "right", "top", "bottom", "front" and "back" (Left-handed, Y-up)'),
+            ('UNREAL', 'Unreal Engine', 'Use "front", "back", "left", "right", "top" and "bottom" (Left-handed, Z-up)')
+        ],
+        description=(
+            'Cubemaps will be loaded as 6 textures.\n'
+            'The addon will append the suffixes to the texture names.'
+        ),
+        default='AXIS'
+    )
+
 
 class DDS_OT_export_dds(Operator, ExportHelper):
     """Operator to export .dds files."""

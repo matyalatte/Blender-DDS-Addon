@@ -1,7 +1,9 @@
 """Class for DDS files."""
 
 import ctypes as c
+import copy
 from enum import Enum
+import os
 
 from . import util
 
@@ -200,7 +202,6 @@ def is_hdr(name):
 
 
 class DDSHeader(c.LittleEndianStructure):
-    """Class for dds header."""
     MAGIC = b'\x44\x44\x53\x20'
     _pack_ = 1
     _fields_ = [
@@ -225,32 +226,47 @@ class DDSHeader(c.LittleEndianStructure):
     ]
 
     def init(self, width, height, mipmap_num, format_name, texture_type):
-        """Constructor."""
         self.width = width
         self.height = height
         self.mipmap_num = mipmap_num
         self.format_name = format_name
 
     @staticmethod
-    def read(file_name):
+    def read(f):
         """Read dds header."""
-        with open(file_name, 'rb') as f:
-            head = DDSHeader()
-            f.readinto(head)
-            util.check(head.magic, DDSHeader.MAGIC, msg='Not DDS.')
-            util.check(head.head_size, 124, msg='Not DDS.')
-            head.mipmap_num += head.mipmap_num == 0
+        head = DDSHeader()
+        f.readinto(head)
+        util.check(head.magic, DDSHeader.MAGIC, msg='Not DDS.')
+        util.check(head.head_size, 124, msg='Not DDS.')
+        head.mipmap_num += head.mipmap_num == 0
 
-            # DXT10 header
-            if head.fourCC == b'DX10':
-                head.dxgi_format = DXGI_FORMAT(util.read_uint32(f))      # dxgiFormat
-                util.read_const_uint32(f, 3)         # resourceDimension==3
-                f.seek(4, 1)                    # miscFlag==0 or 4 (0 for 2D textures, 4 for Cube maps)
-                util.read_const_uint32(f, 1)         # arraySize==1
-                f.seek(4, 1)                    # miscFlag2
-            else:
-                head.dxgi_format = get_dds_format(head.fourCC.decode())
+        # DXT10 header
+        if head.fourCC == b'DX10':
+            head.dxgi_format = DXGI_FORMAT(util.read_uint32(f))      # dxgiFormat
+            util.read_const_uint32(f, 3)         # resourceDimension==3
+            f.seek(4, 1)                    # miscFlag==0 or 4 (0 for 2D textures, 4 for Cube maps)
+            util.read_const_uint32(f, 1)         # arraySize==1
+            f.seek(4, 1)                    # miscFlag2
+        else:
+            head.dxgi_format = get_dds_format(head.fourCC.decode())
         return head
+
+    @staticmethod
+    def read_from_file(file_name):
+        """Read dds header from a file."""
+        with open(file_name, 'rb') as f:
+            head = DDSHeader.read(f)
+        return head
+
+    def write(self, f):
+        f.write(self)
+        # DXT10 header
+        if self.fourCC == b'DX10':
+            util.write_uint32(f, self.dxgi_format.value)
+            util.write_uint32(f, 3)
+            util.write_uint32(f, 4 * self.is_cube())
+            util.write_uint32(f, 1)
+            util.write_uint32(f, 0)
 
     def is_cube(self):
         return self.caps2[1] == 254
@@ -280,3 +296,56 @@ class DDSHeader(c.LittleEndianStructure):
     def convertible_to_hdr(self):
         name = self.dxgi_format.name[12:]
         return name in HDR_SUPPORTED
+
+    def to_non_cubemap(self):
+        self.caps2[1] = 0
+        self.pitch_size = self.pitch_size // 6
+
+    def __str__(self):
+        return "{}: {{{}}}".format(self.__class__.__name__,
+                                   ", ".join(["{}: {}".format(field[0], getattr(self, field[0]))
+                                             for field in self._fields_])
+                                   )
+
+
+suffix_list = {
+    "AXIS": ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"],
+    "NUMBER": ["0", "1", "2", "3", "4", "5"],
+    "BLENDER": ["left", "right", "front", "back", "top", "bottom"],
+    "3DSMAX": ["right", "left", "back", "front", "top", "bottom"],
+    "MAYA": ["right", "left", "top", "bottom", "front", "back"],
+    "UNITY": ["left", "right", "top", "bottom", "front", "back"],
+    "UNREAL": ["front", "back", "left", "right", "top", "bottom"]
+}
+
+
+def disassemble_cubemap(file_name, out_dir=".", cubemap_suffix="AXIS"):
+    if cubemap_suffix not in suffix_list:
+        cubemap_suffix = "AXIS"
+    direction_list = suffix_list[cubemap_suffix]
+
+    with open(file_name, "rb") as f:
+        head = DDSHeader.read(f)
+        offset = f.tell()
+        f.seek(0, 2)
+        head.pitch_size = f.tell() - offset
+        f.seek(offset)
+        if not head.is_cube():
+            raise RuntimeError(f"Not Cubemap. ({file_name})")
+        new_head = copy.copy(head)
+        new_head.to_non_cubemap()
+        binary_list = [f.read(new_head.pitch_size) for i in range(6)]
+        offset = f.tell()
+        f.seek(0, 2)
+        util.check(offset, f.tell())
+
+    basename = os.path.basename(file_name)
+    ext = util.get_ext(file_name)
+
+    new_file_names = [os.path.join(out_dir, basename[:-4]) + "_" + d + "." + ext for d in direction_list]
+    for binary, file_name in zip(binary_list, new_file_names):
+        with open(file_name, "wb") as f:
+            new_head.write(f)
+            f.write(binary)
+
+    return new_file_names

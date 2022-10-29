@@ -1,2 +1,6 @@
+ver 0.1.1
+- Support cubemap import
+- Fixed typo
+
 ver 0.1.0
 - Initial release

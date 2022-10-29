@@ -4,6 +4,7 @@ import os
 import time
 import shutil
 import tempfile
+import traceback
 
 import bpy
 from bpy.props import StringProperty
@@ -33,7 +34,7 @@ def load_tga(file, name, color_space='Non-Color'):
     return tex
 
 
-def load_dds(file, invert_normals=False, texconv=None):
+def load_dds(file, invert_normals=False, cubemap_suffix="AXIS", texconv=None):
     """Import a texture form .uasset file.
 
     Args:
@@ -44,7 +45,8 @@ def load_dds(file, invert_normals=False, texconv=None):
     Returns:
         tex (bpy.types.Image): loaded texture
     """
-    texture_name = os.path.basename(file)[:-4]
+    textures = []
+    tex_name = os.path.basename(file)[:-4]
 
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -53,17 +55,23 @@ def load_dds(file, invert_normals=False, texconv=None):
             if texconv is None:
                 texconv = Texconv()
 
-            temp_tga = texconv.convert_to_tga(temp, out=temp_dir, invert_normals=invert_normals)
+            temp_tga = texconv.convert_to_tga(temp, out=temp_dir, invert_normals=invert_normals,
+                                              cubemap_suffix=cubemap_suffix)
             if temp_tga is None:  # if texconv doesn't exist
                 raise RuntimeError('Failed to convert texture.')
-            tex = load_tga(temp_tga, name=texture_name)
+            if not isinstance(temp_tga, list):
+                temp_tga = [temp_tga]
+            for t in temp_tga:
+                textures.append(load_tga(t, name=tex_name + os.path.basename(t)[4:-4]))
 
     except Exception as e:
-        if tex is not None:
-            bpy.data.images.remove(tex)
+        if len(textures) > 0:
+            for tex in textures:
+                if tex is not None:
+                    bpy.data.images.remove(tex)
         raise e
 
-    return tex
+    return textures[0]
 
 
 class DDS_OT_import_dds(Operator, ImportHelper):
@@ -86,6 +94,7 @@ class DDS_OT_import_dds(Operator, ImportHelper):
         layout.use_property_decorate = False  # No animation.
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
+        layout.prop(dds_options, 'cubemap_suffix')
 
     def invoke(self, context, event):
         """Invoke."""
@@ -96,12 +105,12 @@ class DDS_OT_import_dds(Operator, ImportHelper):
         if not self.directory:
             raise RuntimeError('"self.directory" is not specified. This is unexpected.')
         for _, file in enumerate(self.files):
-            ret = self.import_uasset(context, os.path.join(self.directory, file.name))
+            ret = self.import_dds(context, os.path.join(self.directory, file.name))
             if ret != {'FINISHED'}:
                 return ret
         return ret
 
-    def import_uasset(self, context, file):
+    def import_dds(self, context, file):
         """Import a file."""
         try:
             start_time = time.time()
@@ -111,7 +120,8 @@ class DDS_OT_import_dds(Operator, ImportHelper):
             else:
                 raise RuntimeError('Failed to get Image Editor. This is unexpected.')
             dds_options = context.scene.dds_options
-            tex = load_dds(file, invert_normals=dds_options.invert_normals)
+            tex = load_dds(file, invert_normals=dds_options.invert_normals,
+                           cubemap_suffix=dds_options.cubemap_suffix)
             space.image = tex
             elapsed_s = f'{(time.time() - start_time):.2f}s'
             m = f'Success! Imported DDS in {elapsed_s}'
@@ -120,6 +130,7 @@ class DDS_OT_import_dds(Operator, ImportHelper):
             ret = {'FINISHED'}
 
         except Exception as e:
+            print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
         return ret
@@ -139,6 +150,7 @@ class DDS_PT_import_panel(bpy.types.Panel):
         layout.operator(DDS_OT_import_dds.bl_idname, icon='TEXTURE_DATA')
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
+        layout.prop(dds_options, 'cubemap_suffix')
 
 
 classes = (

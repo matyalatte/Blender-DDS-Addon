@@ -12,11 +12,11 @@ from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
 from .texconv import Texconv
-from .export_dds import get_cubemap_suffix
+from .export_dds import get_cubemap_suffix, get_image_editor_space
 
 
-def load_tga(file, name, color_space='Non-Color'):
-    """Load tga file.
+def load_texture(file, name, color_space='Non-Color'):
+    """Load a texture file.
 
     Args:
         file (string): file path for dds
@@ -41,6 +41,7 @@ def load_dds(file, invert_normals=False, cubemap_suffix=None, texconv=None):
     Args:
         file (string): file path to .uasset file
         invert_normals (bool): Flip y axis if the texture is normal map.
+        cubemap_suffix (list[string]): Suffix list for cubemap.
         texconv (Texconv): Texture converter for dds.
 
     Returns:
@@ -64,7 +65,7 @@ def load_dds(file, invert_normals=False, cubemap_suffix=None, texconv=None):
             if not isinstance(temp_tga, list):
                 temp_tga = [temp_tga]
             for t in temp_tga:
-                textures.append(load_tga(t, name=os.path.basename(t)[:-4]))
+                textures.append(load_texture(t, name=os.path.basename(t)[:-4]))
 
     except Exception as e:
         if len(textures) > 0:
@@ -116,11 +117,7 @@ class DDS_OT_import_dds(Operator, ImportHelper):
         """Import a file."""
         try:
             start_time = time.time()
-            area = context.area
-            if area.type == 'IMAGE_EDITOR':
-                space = area.spaces.active
-            else:
-                raise RuntimeError('Failed to get Image Editor. This is unexpected.')
+            space = get_image_editor_space(context)
             dds_options = context.scene.dds_options
             cubemap_suffix = get_cubemap_suffix(dds_options.cubemap_suffix)
             tex = load_dds(file, invert_normals=dds_options.invert_normals,

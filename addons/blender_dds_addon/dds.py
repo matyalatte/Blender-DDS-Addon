@@ -11,7 +11,7 @@ from . import util
 # https://docs.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format
 class DXGI_FORMAT(Enum):
     """Enum for DDS format."""
-    DXGI_FORMAT_UNKNOWN = 0,
+    DXGI_FORMAT_UNKNOWN = 0
     DXGI_FORMAT_R32G32B32A32_TYPELESS = 1
     DXGI_FORMAT_R32G32B32A32_FLOAT = 2
     DXGI_FORMAT_R32G32B32A32_UINT = 3
@@ -225,7 +225,7 @@ class DDSHeader(c.LittleEndianStructure):
         ("reserved2", c.c_uint32 * 3),  # ReservedCpas, Reserved2
     ]
 
-    def init(self, width, height, mipmap_num, format_name, texture_type):
+    def init(self, width, height, mipmap_num, format_name):
         self.width = width
         self.height = height
         self.mipmap_num = mipmap_num
@@ -305,12 +305,6 @@ class DDSHeader(c.LittleEndianStructure):
         self.caps2[1] = 254
         self.pitch_size *= 6
 
-    def __str__(self):
-        return "{}: {{{}}}".format(self.__class__.__name__,
-                                   ", ".join(["{}: {}".format(field[0], getattr(self, field[0]))
-                                             for field in self._fields_])
-                                   )
-
 
 def disassemble_cubemap(file_name, out_dir=".", cubemap_suffix=None):
     if cubemap_suffix is None:
@@ -335,8 +329,8 @@ def disassemble_cubemap(file_name, out_dir=".", cubemap_suffix=None):
     ext = util.get_ext(file_name)
 
     new_file_names = [os.path.join(out_dir, basename[:-4]) + "_" + suf + "." + ext for suf in cubemap_suffix]
-    for binary, file_name in zip(binary_list, new_file_names):
-        with open(file_name, "wb") as f:
+    for binary, new_file in zip(binary_list, new_file_names):
+        with open(new_file, "wb") as f:
             new_head.write(f)
             f.write(binary)
 

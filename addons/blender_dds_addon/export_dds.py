@@ -19,7 +19,14 @@ from .dds import DXGI_FORMAT, is_hdr, assemble_cubemap
 from .texconv import Texconv
 
 
-def save_tga(tex, file, fmt):
+def save_texture(tex, file, fmt):
+    """Save a texture.
+
+    Args:
+        tex (bpy.types.Image): an image object
+        file (string): file path
+        fmt (string): file format
+    """
     file_format = tex.file_format
     filepath_raw = tex.filepath_raw
 
@@ -45,11 +52,14 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
     """Export a texture as DDS.
 
     Args:
+        tex (bpy.types.Image): an image object
         file (string): file path to .dds file
         dds_fmt (string): DXGI format (e.g. BC1_UNORM)
         invert_normals (bool): Flip y axis for BC5 textures.
         no_mip (bool): Disable mipmap generation.
         allow_slow_codec: Allow CPU codec for BC6 and BC7.
+        export_as_cubemap (bool): Export textures as cubemap.
+        cubemap_suffix (list[string]): Suffix list for cubemap.
         texconv (Texconv): Texture converter for dds.
 
     Returns:
@@ -77,7 +87,7 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
             for t in textures:
                 if t.name == tex_name:
                     return t
-            raise RuntimeError(f'Failed to make a cubemap. ({name} not found)')
+            raise RuntimeError(f'Failed to make a cubemap. ({tex_name} not found)')
 
         textures_ = [img for img in bpy.data.images if base in img.name]
         textures = [get_tex_by_name(base, suf, textures_) for suf in cubemap_suffix]
@@ -93,17 +103,19 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
 
     with tempfile.TemporaryDirectory() as temp_dir:
         dds_list = []
-        for tex in textures:
-            temp = os.path.join(temp_dir, tex.name + ext)
+        verbose = True
+        for t in textures:
+            temp = os.path.join(temp_dir, t.name + ext)
 
-            save_tga(tex, temp, fmt)
+            save_texture(t, temp, fmt)
 
             if texconv is None:
                 texconv = Texconv()
 
             temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
                                               invert_normals=invert_normals, no_mip=no_mip,
-                                              allow_slow_codec=allow_slow_codec)
+                                              allow_slow_codec=allow_slow_codec, verbose=verbose)
+            verbose = False
             if temp_dds is None:
                 raise RuntimeError('Failed to convert texture.')
             dds_list.append(temp_dds)
@@ -129,8 +141,7 @@ def get_alt_fmt(fmt):
     """Add alt name for the format."""
     if fmt in dic:
         return fmt + dic[fmt]
-    else:
-        return fmt
+    return fmt
 
 
 def is_supported(fmt):
@@ -212,6 +223,15 @@ def get_cubemap_suffix(suffix_set):
     return suffix_set_list[suffix_set]
 
 
+def get_image_editor_space(context):
+    area = context.area
+    if area.type == 'IMAGE_EDITOR':
+        space = area.spaces.active
+    else:
+        raise RuntimeError('Failed to get Image Editor. This is unexpected.')
+    return space
+
+
 class DDS_OT_export_dds(Operator, ExportHelper):
     """Operator to export .dds files."""
     bl_idname = 'dds.export_dds'
@@ -258,12 +278,8 @@ class DDS_OT_export_dds(Operator, ExportHelper):
         file = self.filepath
         try:
             start_time = time.time()
-            area = context.area
-            if area.type == 'IMAGE_EDITOR':
-                space = area.spaces.active
-            else:
-                raise RuntimeError('Failed to get Image Editor. This is unexpected.')
 
+            space = get_image_editor_space(context)
             tex = space.image
             if tex is None:
                 raise RuntimeError('Select an image on Image Editor.')

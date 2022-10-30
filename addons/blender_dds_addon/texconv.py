@@ -14,7 +14,6 @@ from . import util
 class Texconv:
     """Texture converter."""
     def __init__(self, dll_path=None):
-        """Constructor."""
         if dll_path is None:
             file_path = os.path.realpath(__file__)
             if util.is_windows():
@@ -60,17 +59,19 @@ class Texconv:
     def convert_to_tga(self, file, out=None, invert_normals=False, cubemap_suffix="AXIS", verbose=True):
         """Convert dds to tga."""
         dds_header = DDSHeader.read_from_file(file)
-        print(f'DXGI_FORMAT: {dds_header.get_format_as_str()[12:]}')
+        if verbose:
+            print(f'DXGI_FORMAT: {dds_header.get_format_as_str()[12:]}')
 
         if dds_header.is_3d():
             raise RuntimeError('Can not convert 3D textures with texconv.')
 
         if dds_header.is_cube():
+            # Convert cubemap to 6 tga files
             new_file_names = disassemble_cubemap(file, out_dir=out, cubemap_suffix=cubemap_suffix)
             tga_names = []
             for file_name in new_file_names:
                 tga_names.append(self.convert_to_tga(file_name, out=out,
-                                                     invert_normals=invert_normals, verbose=verbose))
+                                                     invert_normals=invert_normals, verbose=False))
             return tga_names
 
         args = []
@@ -110,10 +111,15 @@ class Texconv:
         if ('BC6' in dds_fmt or 'BC7' in dds_fmt) and (not util.is_windows()) and (not allow_slow_codec):
             raise RuntimeError(f'Can NOT use CPU codec for {dds_fmt}. Or enable the "Allow Slow Codec" option.')
 
-        print(f'DXGI_FORMAT: {dds_fmt}')
+        if verbose:
+            print(f'DXGI_FORMAT: {dds_fmt}')
         args = ['-f', dds_fmt]
         if no_mip:
             args += ['-m', '1']
+
+        if ("BC5" in dds_fmt) and invert_normals:
+            args += ['-inverty']
+
         out = self.convert(file, args, out=out, verbose=verbose, allow_slow_codec=allow_slow_codec)
         name = os.path.join(out, os.path.basename(file))
         name = '.'.join(name.split('.')[:-1] + ['dds'])

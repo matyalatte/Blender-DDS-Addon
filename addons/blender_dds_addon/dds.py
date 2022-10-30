@@ -301,6 +301,10 @@ class DDSHeader(c.LittleEndianStructure):
         self.caps2[1] = 0
         self.pitch_size = self.pitch_size // 6
 
+    def to_cubemap(self):
+        self.caps2[1] = 254
+        self.pitch_size *= 6
+
     def __str__(self):
         return "{}: {{{}}}".format(self.__class__.__name__,
                                    ", ".join(["{}: {}".format(field[0], getattr(self, field[0]))
@@ -308,21 +312,9 @@ class DDSHeader(c.LittleEndianStructure):
                                    )
 
 
-suffix_list = {
-    "AXIS": ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"],
-    "NUMBER": ["0", "1", "2", "3", "4", "5"],
-    "BLENDER": ["left", "right", "front", "back", "top", "bottom"],
-    "3DSMAX": ["right", "left", "back", "front", "top", "bottom"],
-    "MAYA": ["right", "left", "top", "bottom", "front", "back"],
-    "UNITY": ["left", "right", "top", "bottom", "front", "back"],
-    "UNREAL": ["front", "back", "left", "right", "top", "bottom"]
-}
-
-
-def disassemble_cubemap(file_name, out_dir=".", cubemap_suffix="AXIS"):
-    if cubemap_suffix not in suffix_list:
-        cubemap_suffix = "AXIS"
-    direction_list = suffix_list[cubemap_suffix]
+def disassemble_cubemap(file_name, out_dir=".", cubemap_suffix=None):
+    if cubemap_suffix is None:
+        cubemap_suffix = ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"]
 
     with open(file_name, "rb") as f:
         head = DDSHeader.read(f)
@@ -331,7 +323,7 @@ def disassemble_cubemap(file_name, out_dir=".", cubemap_suffix="AXIS"):
         head.pitch_size = f.tell() - offset
         f.seek(offset)
         if not head.is_cube():
-            raise RuntimeError(f"Not Cubemap. ({file_name})")
+            raise RuntimeError(f"Not a cubemap. Or it's a partial cubemap.({file_name})")
         new_head = copy.copy(head)
         new_head.to_non_cubemap()
         binary_list = [f.read(new_head.pitch_size) for i in range(6)]
@@ -342,10 +334,31 @@ def disassemble_cubemap(file_name, out_dir=".", cubemap_suffix="AXIS"):
     basename = os.path.basename(file_name)
     ext = util.get_ext(file_name)
 
-    new_file_names = [os.path.join(out_dir, basename[:-4]) + "_" + d + "." + ext for d in direction_list]
+    new_file_names = [os.path.join(out_dir, basename[:-4]) + "_" + suf + "." + ext for suf in cubemap_suffix]
     for binary, file_name in zip(binary_list, new_file_names):
         with open(file_name, "wb") as f:
             new_head.write(f)
             f.write(binary)
 
     return new_file_names
+
+
+def assemble_cubemap(file_list, new_file):
+    binary_list = []
+
+    for file in file_list:
+        with open(file, "rb") as f:
+            head = DDSHeader.read(f)
+            if head.is_cube() or head.is_3d():
+                raise RuntimeError(f"Can not make a cubemap from non-2D textures. ({file})")
+            binary_list.append(f.read())
+
+    new_head = copy.copy(head)
+    new_head.to_cubemap()
+
+    with open(new_file, "wb") as f:
+        new_head.write(f)
+        for binary in binary_list:
+            f.write(binary)
+
+    return new_file

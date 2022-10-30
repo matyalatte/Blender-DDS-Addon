@@ -1,4 +1,4 @@
-# Blender-DDS-Addon v0.1.0
+# Blender-DDS-Addon v0.1.1
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![build](https://github.com/matyalatte/Blender-DDS-Addon/actions/workflows/build.yml/badge.svg)
@@ -13,6 +13,7 @@ Blender addon to import and export dds textures
 - Import DDS textures as TGA (or HDR)
 - Export textures as DDS
 - Support many DXGI formats
+- Support cubemaps
 
 ## Download
 You can download zip files from [the release page](https://github.com/matyalatte/Blender-DDS-Addon/releases).  
@@ -27,8 +28,7 @@ If you want to use the addon on other platforms, you need to build [Texconv](htt
 [Getting Started · matyalatte/Blender-DDS-Addon Wiki](https://github.com/matyalatte/Blender-DDS-Addon/wiki/Getting-Started)
 
 ## Supported Formats
-The addon supports most of the 2D formats.  
-(Cube maps and 3D textures are unsupported.)  
+The addon supports most of the DXGI formats.  
   
 Here is a list of supported formats.  
 
@@ -89,7 +89,12 @@ Here is a list of supported formats.
 
 </details>
 
-## External dependencies
+## About Non-2D Textures
+Blender only supports 2D textures.  
+So the addon will load cubemaps as 6 textures.  
+Partial cubemaps and 3D textures are unsupported.  
+
+## External Dependencies
 
 ### Texconv-Custom-DLL
 [Texconv](https://github.com/microsoft/DirectXTex/wiki/Texconv)

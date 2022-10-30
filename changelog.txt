@@ -1,5 +1,5 @@
 ver 0.1.1
-- Support cubemap import
+- Added support for cubemaps (except for partial cubemaps)
 - Fixed typo
 
 ver 0.1.0

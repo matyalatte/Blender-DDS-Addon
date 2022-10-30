@@ -12,6 +12,7 @@ htmlcov
 # textures
 *.dds
 !tests/test.dds
+!tests/cube.dds
 *.tga
 *.png
 

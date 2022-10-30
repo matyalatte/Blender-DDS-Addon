@@ -12,6 +12,7 @@ from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 
 from .texconv import Texconv
+from .export_dds import get_cubemap_suffix
 
 
 def load_tga(file, name, color_space='Non-Color'):
@@ -34,7 +35,7 @@ def load_tga(file, name, color_space='Non-Color'):
     return tex
 
 
-def load_dds(file, invert_normals=False, cubemap_suffix="AXIS", texconv=None):
+def load_dds(file, invert_normals=False, cubemap_suffix=None, texconv=None):
     """Import a texture form .uasset file.
 
     Args:
@@ -46,11 +47,12 @@ def load_dds(file, invert_normals=False, cubemap_suffix="AXIS", texconv=None):
         tex (bpy.types.Image): loaded texture
     """
     textures = []
-    tex_name = os.path.basename(file)[:-4]
+    if cubemap_suffix is None:
+        cubemap_suffix = ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"]
 
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
-            temp = os.path.join(temp_dir, "temp.dds")
+            temp = os.path.join(temp_dir, os.path.basename(file))
             shutil.copyfile(file, temp)
             if texconv is None:
                 texconv = Texconv()
@@ -62,7 +64,7 @@ def load_dds(file, invert_normals=False, cubemap_suffix="AXIS", texconv=None):
             if not isinstance(temp_tga, list):
                 temp_tga = [temp_tga]
             for t in temp_tga:
-                textures.append(load_tga(t, name=tex_name + os.path.basename(t)[4:-4]))
+                textures.append(load_tga(t, name=os.path.basename(t)[:-4]))
 
     except Exception as e:
         if len(textures) > 0:
@@ -120,8 +122,9 @@ class DDS_OT_import_dds(Operator, ImportHelper):
             else:
                 raise RuntimeError('Failed to get Image Editor. This is unexpected.')
             dds_options = context.scene.dds_options
+            cubemap_suffix = get_cubemap_suffix(dds_options.cubemap_suffix)
             tex = load_dds(file, invert_normals=dds_options.invert_normals,
-                           cubemap_suffix=dds_options.cubemap_suffix)
+                           cubemap_suffix=cubemap_suffix)
             space.image = tex
             elapsed_s = f'{(time.time() - start_time):.2f}s'
             m = f'Success! Imported DDS in {elapsed_s}'

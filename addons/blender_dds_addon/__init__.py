@@ -3,7 +3,7 @@
 bl_info = {
     'name': 'DDS textures',
     'author': 'Matyalatte',
-    'version': (0, 1, 0),
+    'version': (0, 1, 1),
     'blender': (2, 83, 20),
     'location': 'Image Editor > Sidebar > DDS Tab',
     'description': 'Import and export .dds files',

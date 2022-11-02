@@ -91,8 +91,8 @@ Here is a list of supported formats.
 
 ## About Non-2D Textures
 Blender only supports 2D textures.  
-So the addon will load cubemaps as 6 textures.  
-Partial cubemaps and 3D textures are unsupported.  
+But the addon supports cubemaps as well.  
+Partial cubemaps, 3D textures, and texture arrays are unsupported.  
 
 ## External Dependencies
 

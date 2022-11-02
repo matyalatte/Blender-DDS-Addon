@@ -15,6 +15,7 @@ htmlcov
 !tests/cube.dds
 *.tga
 *.png
+*.hdr
 
 # blender
 *.blend*

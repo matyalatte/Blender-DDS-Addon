@@ -1,5 +1,5 @@
 ver 0.1.1
-- Added support for cubemaps (except for partial cubemaps)
+- Added support for cubemaps
 - Fixed typo
 
 ver 0.1.0

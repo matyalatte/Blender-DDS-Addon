@@ -3,7 +3,6 @@
 import ctypes as c
 import copy
 from enum import Enum
-import os
 
 from . import util
 
@@ -140,10 +139,15 @@ class DXGI_FORMAT(Enum):
 
 
 DDS_PIXELFORMAT_TO_DXGI = [
-    [['DXT1'], DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM],
-    [['DXT5'], DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM],
-    [['ATI1', 'BC4U'], DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM],
-    [['ATI2', 'BC5U'], DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM]
+    [[b'DXT1'], DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM],
+    [[b'DXT2', b'DXT3'], DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM],
+    [[b'DXT4', b'DXT5'], DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM],
+    [[b'ATI1', b'BC4U'], DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM],
+    [[b'ATI2', b'BC5U'], DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM],
+    [[b'BC4S'], DXGI_FORMAT.DXGI_FORMAT_BC4_SNORM],
+    [[b'BC5S'], DXGI_FORMAT.DXGI_FORMAT_BC5_SNORM],
+    [[b'\x71\x00\x00\x00'], DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_FLOAT],
+    [[b'\x74\x00\x00\x00'], DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT]
 ]
 
 
@@ -248,7 +252,7 @@ class DDSHeader(c.LittleEndianStructure):
             util.read_const_uint32(f, 1)         # arraySize==1
             f.seek(4, 1)                    # miscFlag2
         else:
-            head.dxgi_format = get_dds_format(head.fourCC.decode())
+            head.dxgi_format = get_dds_format(head.fourCC)
         return head
 
     @staticmethod
@@ -297,44 +301,9 @@ class DDSHeader(c.LittleEndianStructure):
         name = self.dxgi_format.name[12:]
         return name in HDR_SUPPORTED
 
-    def to_non_cubemap(self):
-        self.caps2[1] = 0
-        self.pitch_size = self.pitch_size // 6
-
     def to_cubemap(self):
         self.caps2[1] = 254
         self.pitch_size *= 6
-
-
-def disassemble_cubemap(file_name, out_dir=".", cubemap_suffix=None):
-    if cubemap_suffix is None:
-        cubemap_suffix = ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"]
-
-    with open(file_name, "rb") as f:
-        head = DDSHeader.read(f)
-        offset = f.tell()
-        f.seek(0, 2)
-        head.pitch_size = f.tell() - offset
-        f.seek(offset)
-        if not head.is_cube():
-            raise RuntimeError(f"Not a cubemap. Or it's a partial cubemap.({file_name})")
-        new_head = copy.copy(head)
-        new_head.to_non_cubemap()
-        binary_list = [f.read(new_head.pitch_size) for i in range(6)]
-        offset = f.tell()
-        f.seek(0, 2)
-        util.check(offset, f.tell())
-
-    basename = os.path.basename(file_name)
-    ext = util.get_ext(file_name)
-
-    new_file_names = [os.path.join(out_dir, basename[:-4]) + "_" + suf + "." + ext for suf in cubemap_suffix]
-    for binary, new_file in zip(binary_list, new_file_names):
-        with open(new_file, "wb") as f:
-            new_head.write(f)
-            f.write(binary)
-
-    return new_file_names
 
 
 def assemble_cubemap(file_list, new_file):

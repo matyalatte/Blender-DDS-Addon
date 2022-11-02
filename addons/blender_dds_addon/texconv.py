@@ -7,7 +7,7 @@ Notes:
 import ctypes
 import os
 
-from .dds import DDSHeader, DXGI_FORMAT, is_hdr, disassemble_cubemap
+from .dds import DDSHeader, DXGI_FORMAT, is_hdr
 from . import util
 
 
@@ -56,7 +56,7 @@ class Texconv:
         self.run(args, verbose=verbose, allow_slow_codec=allow_slow_codec)
         return out
 
-    def convert_to_tga(self, file, out=None, invert_normals=False, cubemap_suffix="AXIS", verbose=True):
+    def convert_to_tga(self, file, out=None, cubemap_layout="v-cross", invert_normals=False, verbose=True):
         """Convert dds to tga."""
         dds_header = DDSHeader.read_from_file(file)
         if verbose:
@@ -64,15 +64,6 @@ class Texconv:
 
         if dds_header.is_3d():
             raise RuntimeError('Can not convert 3D textures with texconv.')
-
-        if dds_header.is_cube():
-            # Convert cubemap to 6 tga files
-            new_file_names = disassemble_cubemap(file, out_dir=out, cubemap_suffix=cubemap_suffix)
-            tga_names = []
-            for file_name in new_file_names:
-                tga_names.append(self.convert_to_tga(file_name, out=out,
-                                                     invert_normals=invert_normals, verbose=False))
-            return tga_names
 
         args = []
 
@@ -89,16 +80,21 @@ class Texconv:
             msg = f'Int format detected. ({dds_header.get_format_as_str()})\n It might not be converted correctly.'
             raise RuntimeError(msg)
 
-        args += ['-ft', fmt]
+        if not dds_header.is_cube():
+            args += ['-ft', fmt]
 
-        if dds_header.is_bc5():
-            args += ['-reconstructz']
-            if invert_normals:
-                args += ['-inverty']
+            if dds_header.is_bc5():
+                args += ['-reconstructz']
+                if invert_normals:
+                    args += ['-inverty']
 
-        out = self.convert(file, args, out=out, verbose=verbose)
-        name = os.path.join(out, os.path.basename(file))
-        name = '.'.join(name.split('.')[:-1] + [fmt])
+        if dds_header.is_cube():
+            name = ".".join(file.split(".")[:-1] + [fmt])
+            self.texassemble(file, name, args, cubemap_layout=cubemap_layout, verbose=verbose)
+        else:
+            out = self.convert(file, args, out=out, verbose=verbose)
+            name = os.path.join(out, os.path.basename(file))
+            name = '.'.join(name.split('.')[:-1] + [fmt])
         return name
 
     def convert_to_dds(self, file, dds_fmt, out=None,
@@ -124,3 +120,19 @@ class Texconv:
         name = os.path.join(out, os.path.basename(file))
         name = '.'.join(name.split('.')[:-1] + ['dds'])
         return name
+
+    def texassemble(self, file, new_file, args, cubemap_layout="v-cross", verbose=True):
+        """Run texassemble with args."""
+        out = os.path.dirname(new_file)
+        if out not in ['.', ''] and not os.path.exists(out):
+            util.mkdir(out)
+        args += ["-y", "-o", new_file, file]
+        if cubemap_layout.endswith("-fnz"):
+            cubemap_layout = cubemap_layout[:-4]
+        args = [cubemap_layout] + args
+        args_p = [ctypes.c_wchar_p(arg) for arg in args]
+        args_p = (ctypes.c_wchar_p*len(args_p))(*args_p)
+        err_buf = ctypes.create_unicode_buffer(512)
+        result = self.dll.texassemble(len(args), args_p, verbose, False, err_buf, 512)
+        if result != 0:
+            raise RuntimeError(err_buf.value)

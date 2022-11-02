@@ -10,9 +10,10 @@ import bpy
 from bpy.props import StringProperty
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
+import numpy as np
 
 from .texconv import Texconv
-from .export_dds import get_cubemap_suffix, get_image_editor_space
+from .export_dds import get_image_editor_space
 
 
 def load_texture(file, name, color_space='Non-Color'):
@@ -35,22 +36,19 @@ def load_texture(file, name, color_space='Non-Color'):
     return tex
 
 
-def load_dds(file, invert_normals=False, cubemap_suffix=None, texconv=None):
+def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None):
     """Import a texture form .uasset file.
 
     Args:
         file (string): file path to .uasset file
         invert_normals (bool): Flip y axis if the texture is normal map.
-        cubemap_suffix (list[string]): Suffix list for cubemap.
+        cubemap_layout (string): Layout for cubemap faces.
         texconv (Texconv): Texture converter for dds.
 
     Returns:
         tex (bpy.types.Image): loaded texture
     """
-    textures = []
-    if cubemap_suffix is None:
-        cubemap_suffix = ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"]
-
+    tex = None
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp = os.path.join(temp_dir, os.path.basename(file))
@@ -58,23 +56,28 @@ def load_dds(file, invert_normals=False, cubemap_suffix=None, texconv=None):
             if texconv is None:
                 texconv = Texconv()
 
-            temp_tga = texconv.convert_to_tga(temp, out=temp_dir, invert_normals=invert_normals,
-                                              cubemap_suffix=cubemap_suffix)
+            temp_tga = texconv.convert_to_tga(temp, out=temp_dir, cubemap_layout=cubemap_layout,
+                                              invert_normals=invert_normals)
             if temp_tga is None:  # if texconv doesn't exist
                 raise RuntimeError('Failed to convert texture.')
-            if not isinstance(temp_tga, list):
-                temp_tga = [temp_tga]
-            for t in temp_tga:
-                textures.append(load_texture(t, name=os.path.basename(t)[:-4]))
+            tex = load_texture(temp_tga, name=os.path.basename(temp_tga)[:-4])
 
     except Exception as e:
-        if len(textures) > 0:
-            for tex in textures:
-                if tex is not None:
-                    bpy.data.images.remove(tex)
+        if tex is not None:
+            bpy.data.images.remove(tex)
         raise e
 
-    return textures[0]
+    if cubemap_layout.endswith("-fnz"):
+        w, h = tex.size
+        pix = np.array(tex.pixels).reshape((h, w, -1))
+        if cubemap_layout[0] == "v":
+            pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2] = (pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2])[::-1, ::-1]
+        else:
+            pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4] = (pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4])[::-1, ::-1]
+        pix = pix.flatten()
+        tex.pixels = list(pix)
+        tex.update()
+    return tex
 
 
 class DDS_OT_import_dds(Operator, ImportHelper):
@@ -97,7 +100,7 @@ class DDS_OT_import_dds(Operator, ImportHelper):
         layout.use_property_decorate = False  # No animation.
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
-        layout.prop(dds_options, 'cubemap_suffix')
+        layout.prop(dds_options, 'cubemap_layout')
 
     def invoke(self, context, event):
         """Invoke."""
@@ -119,9 +122,8 @@ class DDS_OT_import_dds(Operator, ImportHelper):
             start_time = time.time()
             space = get_image_editor_space(context)
             dds_options = context.scene.dds_options
-            cubemap_suffix = get_cubemap_suffix(dds_options.cubemap_suffix)
             tex = load_dds(file, invert_normals=dds_options.invert_normals,
-                           cubemap_suffix=cubemap_suffix)
+                           cubemap_layout=dds_options.cubemap_layout)
             space.image = tex
             elapsed_s = f'{(time.time() - start_time):.2f}s'
             m = f'Success! Imported DDS in {elapsed_s}'
@@ -150,7 +152,7 @@ class DDS_PT_import_panel(bpy.types.Panel):
         layout.operator(DDS_OT_import_dds.bl_idname, icon='TEXTURE_DATA')
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
-        layout.prop(dds_options, 'cubemap_suffix')
+        layout.prop(dds_options, 'cubemap_layout')
 
 
 classes = (

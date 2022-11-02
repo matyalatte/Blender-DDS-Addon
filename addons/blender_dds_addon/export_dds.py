@@ -14,6 +14,7 @@ from bpy.props import (StringProperty,
                        CollectionProperty)
 from bpy.types import Operator, PropertyGroup
 from bpy_extras.io_utils import ExportHelper
+import numpy as np
 
 from .dds import DXGI_FORMAT, is_hdr, assemble_cubemap
 from .texconv import Texconv
@@ -47,7 +48,7 @@ def save_texture(tex, file, fmt):
 def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
              allow_slow_codec=False,
              export_as_cubemap=False,
-             cubemap_suffix=None,
+             cubemap_layout='h-cross',
              texconv=None):
     """Export a texture as DDS.
 
@@ -57,43 +58,14 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         dds_fmt (string): DXGI format (e.g. BC1_UNORM)
         invert_normals (bool): Flip y axis for BC5 textures.
         no_mip (bool): Disable mipmap generation.
-        allow_slow_codec: Allow CPU codec for BC6 and BC7.
+        allow_slow_codec (bool): Allow CPU codec for BC6 and BC7.
         export_as_cubemap (bool): Export textures as cubemap.
-        cubemap_suffix (list[string]): Suffix list for cubemap.
+        cubemap_layout (string): Layout for cubemap faces.
         texconv (Texconv): Texture converter for dds.
 
     Returns:
         tex (bpy.types.Image): loaded texture
     """
-
-    if cubemap_suffix is None:
-        cubemap_suffix = ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"]
-
-    if export_as_cubemap:
-        def get_base(name, suffix_list):
-            for suf in suffix_list:
-                if name.endswith("_" + suf):
-                    return name[:-(len(suf) + 1)]
-            return None
-
-        base = get_base(tex.name, cubemap_suffix)
-        if base is None:
-            msg = (f'Failed to make a cubemap. ({tex.name}'
-                   'should have suffix defined with "Suffix Set for Cubemap" option)')
-            raise RuntimeError(msg)
-
-        def get_tex_by_name(base, suf, textures):
-            tex_name = base + "_" + suf
-            for t in textures:
-                if t.name == tex_name:
-                    return t
-            raise RuntimeError(f'Failed to make a cubemap. ({tex_name} not found)')
-
-        textures_ = [img for img in bpy.data.images if base in img.name]
-        textures = [get_tex_by_name(base, suf, textures_) for suf in cubemap_suffix]
-    else:
-        textures = [tex]
-
     if is_hdr(dds_fmt):
         ext = '.hdr'
         fmt = 'HDR'
@@ -101,27 +73,74 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         ext = '.tga'
         fmt = 'TARGA_RAW'
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        dds_list = []
-        verbose = True
+    if export_as_cubemap:
+        w, h = tex.size
+
+        def gcd(m, n):
+            r = m % n
+            return gcd(n, r) if r else n
+
+        face_size = gcd(w, h)
+        w_ratio = w // face_size
+        h_ratio = h // face_size
+        if w_ratio == 1 and h_ratio == 6:
+            offsets = [[0, i] for i in range(6)]
+        elif w_ratio == 6 and h_ratio == 1:
+            offsets = [[i, 0] for i in range(6)]
+        elif w_ratio == 4 and h_ratio == 3:
+            offsets = [[2, 1], [0, 1], [1, 2], [1, 0], [1, 1], [3, 1]]
+        elif w_ratio == 3 and h_ratio == 4:
+            offsets = [[2, 2], [0, 2], [1, 3], [1, 1], [1, 2], [1, 0]]
+        else:
+            raise RuntimeError("Failed to determine cubemap layout.")
+        pix = np.array(tex.pixels).reshape(h, w, -1)
+        textures = []
+        for i in range(6):
+            new_tex = tex.copy()
+            new_tex.name = tex.name + f"_{i}"
+            new_tex.scale(face_size, face_size)
+            new_pix = np.array(new_tex.pixels).reshape(face_size, face_size, -1)
+            x, y = offsets[i]
+            new_pix = pix[y * face_size: (y + 1) * face_size, x * face_size: (x + 1) * face_size]
+            if i == 5 and ('fnz' in cubemap_layout) and (w_ratio in [3, 4]):
+                new_pix = new_pix[::-1, ::-1]
+            new_tex.pixels = list(new_pix.flatten())
+            textures.append(new_tex)
+    else:
+        textures = [tex]
+
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            dds_list = []
+            verbose = True
+            for t in textures:
+                temp = os.path.join(temp_dir, t.name + ext)
+
+                save_texture(t, temp, fmt)
+
+                if texconv is None:
+                    texconv = Texconv()
+
+                temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
+                                                  invert_normals=invert_normals, no_mip=no_mip,
+                                                  allow_slow_codec=allow_slow_codec, verbose=verbose)
+                verbose = False
+                if temp_dds is None:
+                    raise RuntimeError('Failed to convert texture.')
+                dds_list.append(temp_dds)
+            if len(dds_list) > 1:
+                temp_dds = assemble_cubemap(dds_list, os.path.join(temp_dir, "temp.dds"))
+            shutil.copyfile(temp_dds, file)
+
+    except Exception as e:
+        if export_as_cubemap:
+            for t in textures:
+                bpy.data.images.remove(t)
+        raise e
+
+    if export_as_cubemap:
         for t in textures:
-            temp = os.path.join(temp_dir, t.name + ext)
-
-            save_texture(t, temp, fmt)
-
-            if texconv is None:
-                texconv = Texconv()
-
-            temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
-                                              invert_normals=invert_normals, no_mip=no_mip,
-                                              allow_slow_codec=allow_slow_codec, verbose=verbose)
-            verbose = False
-            if temp_dds is None:
-                raise RuntimeError('Failed to convert texture.')
-            dds_list.append(temp_dds)
-        if len(dds_list) > 1:
-            temp_dds = assemble_cubemap(dds_list, os.path.join(temp_dir, "temp.dds"))
-        shutil.copyfile(temp_dds, file)
+            bpy.data.images.remove(t)
 
     return tex
 
@@ -180,47 +199,28 @@ class DDSOptions(PropertyGroup):
 
     export_as_cubemap: BoolProperty(
         name='Export as Cubemap',
-        description=("Export 6 textures as a cubemap.\n"
-                     'Each texture should have a proper suffix defined with the "Suffix Set for Cubemap" option'),
+        description=("Export a texture as a cubemap.\n"
+                     'Faces should be aligned in a layout defined in "Layout for Cubemap Faces" option'),
         default=False,
     )
 
-    cubemap_suffix: EnumProperty(
-        name='Suffix Set for Cubemap',
+    cubemap_layout: EnumProperty(
+        name='Layout for Cubemap Faces',
         items=[
-            ('AXIS', 'Axis', 'Use "_x_pos", "_x_neg", "_y_pos", "_y_neg", "_z_pos" and "_z_neg"'),
-            ('NUMBER', 'Number', 'Use "_0", "_1", "_2", "_3", "_4" and "_5"'),
-            ('BLENDER', 'Blender',
-             'Use "_left", "_right", "_front", "_back", "_top" and "_bottom" (Right-handed, Z-up)'),
-            ('3DSMAX', '3ds Max',
-             'Use "_right", "_left", "_back", "_front", "_top" and "_bottom" (Right-handed, Z-up)'),
-            ('MAYA', 'Maya', 'Use "_right", "_left", "_top", "_bottom", "_front" and "_back" (Right-handed, Y-up)'),
-            ('UNITY', 'Unity', 'Use "_left", "_right", "_top", "_bottom", "_front" and "_back" (Left-handed, Y-up)'),
-            ('UNREAL', 'Unreal Engine',
-             'Use "_front", "_back", "_left", "_right", "_top" and "_bottom" (Left-handed, Z-up)')
+            ('h-cross', 'Horizontal Cross', 'Align faces in a horizontal cross layout'),
+            ('v-cross', 'Vertical Cross', 'Align faces in a vertical cross layout'),
+            ('h-cross-fnz', 'Horizontal Cross (Flip -Z)',
+             'Align faces in a vertical cross layout. And Rotate -Z face by 180 degrees'),
+            ('v-cross-fnz', 'Vertical Cross (Flip -Z)',
+             'Align faces in a vertical cross layout. And Rotate -Z face by 180 degrees'),
+            ('h-strip', 'Horizontal Strip', 'Align faces horizontaly'),
+            ('v-strip', 'Vertical Strip', 'Align faces verticaly'),
         ],
         description=(
-            'Cubemaps will be loaded as 6 textures.\n'
-            'For import operations, the addon will append the suffixes to the texture names.\n'
-            'For export operations, the addon will use the suffixes to choose textures'
+            'How to align faces of a cubemap.\n'
         ),
-        default='AXIS'
+        default='h-cross'
     )
-
-
-suffix_set_list = {
-    "AXIS": ["x_pos", "x_neg", "y_pos", "y_neg", "z_pos", "z_neg"],
-    "NUMBER": ["0", "1", "2", "3", "4", "5"],
-    "BLENDER": ["left", "right", "front", "back", "top", "bottom"],
-    "3DSMAX": ["right", "left", "back", "front", "top", "bottom"],
-    "MAYA": ["right", "left", "top", "bottom", "front", "back"],
-    "UNITY": ["left", "right", "top", "bottom", "front", "back"],
-    "UNREAL": ["front", "back", "left", "right", "top", "bottom"]
-}
-
-
-def get_cubemap_suffix(suffix_set):
-    return suffix_set_list[suffix_set]
 
 
 def get_image_editor_space(context):
@@ -263,7 +263,7 @@ class DDS_OT_export_dds(Operator, ExportHelper):
         layout.prop(dds_options, 'no_mip')
         layout.prop(dds_options, 'allow_slow_codec')
         layout.prop(dds_options, 'export_as_cubemap')
-        layout.prop(dds_options, 'cubemap_suffix')
+        layout.prop(dds_options, 'cubemap_layout')
 
     def invoke(self, context, event):
         """Invoke."""
@@ -284,12 +284,11 @@ class DDS_OT_export_dds(Operator, ExportHelper):
             if tex is None:
                 raise RuntimeError('Select an image on Image Editor.')
             dds_options = context.scene.dds_options
-            cubemap_suffix = get_cubemap_suffix(dds_options.cubemap_suffix)
             save_dds(tex, file, dds_options.dds_format,
                      invert_normals=dds_options.invert_normals, no_mip=dds_options.no_mip,
                      allow_slow_codec=dds_options.allow_slow_codec,
                      export_as_cubemap=dds_options.export_as_cubemap,
-                     cubemap_suffix=cubemap_suffix)
+                     cubemap_layout=dds_options.cubemap_layout)
 
             elapsed_s = f'{(time.time() - start_time):.2f}s'
             m = f'Success! Exported DDS in {elapsed_s}'
@@ -322,7 +321,7 @@ class DDS_PT_export_panel(bpy.types.Panel):
         layout.prop(dds_options, 'no_mip')
         layout.prop(dds_options, 'allow_slow_codec')
         layout.prop(dds_options, 'export_as_cubemap')
-        layout.prop(dds_options, 'cubemap_suffix')
+        layout.prop(dds_options, 'cubemap_layout')
 
 
 classes = (

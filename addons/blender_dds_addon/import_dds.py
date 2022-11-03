@@ -38,10 +38,10 @@ def load_texture(file, name, color_space='Non-Color'):
 
 
 def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None):
-    """Import a texture form .uasset file.
+    """Import a texture form .dds file.
 
     Args:
-        file (string): file path to .uasset file
+        file (string): file path to .dds file
         invert_normals (bool): Flip y axis if the texture is normal map.
         cubemap_layout (string): Layout for cubemap faces.
         texconv (Texconv): Texture converter for dds.

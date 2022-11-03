@@ -78,7 +78,7 @@ class Texconv:
 
         if dds_header.is_int():
             msg = f'Int format detected. ({dds_header.get_format_as_str()})\n It might not be converted correctly.'
-            raise RuntimeError(msg)
+            print(msg)
 
         if not dds_header.is_cube():
             args += ['-ft', fmt]

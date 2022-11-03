@@ -16,6 +16,7 @@ htmlcov
 *.tga
 *.png
 *.hdr
+*.xcf
 
 # blender
 *.blend*

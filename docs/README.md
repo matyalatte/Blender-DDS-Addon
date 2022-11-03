@@ -1,4 +1,4 @@
-# Blender-DDS-Addon v0.1.0
+# Blender-DDS-Addon v0.1.1
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![build](https://github.com/matyalatte/Blender-DDS-Addon/actions/workflows/build.yml/badge.svg)
@@ -13,8 +13,10 @@ Blender addon to import and export dds textures
 - Import DDS textures as TGA (or HDR)
 - Export textures as DDS
 - Support many DXGI formats
+- Support cubemaps
 
 ## Download
+
 You can download zip files from [the release page](https://github.com/matyalatte/Blender-DDS-Addon/releases).  
 
 -   `blender_dds_addon*_Windows.zip` is for Windows.
@@ -24,11 +26,12 @@ You can download zip files from [the release page](https://github.com/matyalatte
 If you want to use the addon on other platforms, you need to build [Texconv](https://github.com/matyalatte/Texconv-Custom-DLL) by yourself.
 
 ## Getting Started
+
 [Getting Started · matyalatte/Blender-DDS-Addon Wiki](https://github.com/matyalatte/Blender-DDS-Addon/wiki/Getting-Started)
 
 ## Supported Formats
-The addon supports most of the 2D formats.  
-(Cube maps and 3D textures are unsupported.)  
+
+The addon supports most of the DXGI formats.  
   
 Here is a list of supported formats.  
 
@@ -89,9 +92,16 @@ Here is a list of supported formats.
 
 </details>
 
-## External dependencies
+## About Non-2D Textures
+
+Blender only supports 2D textures.  
+But the addon supports cubemaps as well.  
+Partial cubemaps, 3D textures, and texture arrays are unsupported.  
+
+## External Dependencies
 
 ### Texconv-Custom-DLL
+
 [Texconv](https://github.com/microsoft/DirectXTex/wiki/Texconv)
 is a texture converter developed by Microsoft.  
 It's the best DDS converter as far as I know.  
@@ -99,4 +109,12 @@ And [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL) is a 
 The official Texconv only supports Windows but you can use it on Unix systems.  
 
 ## License
+
 Files in this repository (including all submodules) are licensed under [MIT license](../LICENSE).
+
+## For Developers
+
+There are some documents for developers.
+
+- [How to Build](./How-To-Build.md): See here if you want to know how to create a zip form the repository.
+- [Tools for development](./For-Dev.md): See here if you want to know how to test the addon.

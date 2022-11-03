@@ -4,17 +4,21 @@ import os
 import time
 import shutil
 import tempfile
+import traceback
 
 import bpy
 from bpy.props import StringProperty
 from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
+import numpy as np
 
 from .texconv import Texconv
+from .export_dds import get_image_editor_space
+from . import util
 
 
-def load_tga(file, name, color_space='Non-Color'):
-    """Load tga file.
+def load_texture(file, name, color_space='Non-Color'):
+    """Load a texture file.
 
     Args:
         file (string): file path for dds
@@ -25,44 +29,55 @@ def load_tga(file, name, color_space='Non-Color'):
         tex (bpy.types.Image): loaded texture
     """
     tex = bpy.data.images.load(file)
-    tex.pack()
     tex.colorspace_settings.name = color_space
-    tex.filepath = ''
-    tex.filepath_raw = ''
     tex.name = name
+    tex.pack()
+    tex.filepath = os.path.join('//textures', tex.name + '.' + util.get_ext(file))
+    tex.filepath_raw = tex.filepath
     return tex
 
 
-def load_dds(file, invert_normals=False, texconv=None):
-    """Import a texture form .uasset file.
+def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None):
+    """Import a texture form .dds file.
 
     Args:
-        file (string): file path to .uasset file
+        file (string): file path to .dds file
         invert_normals (bool): Flip y axis if the texture is normal map.
+        cubemap_layout (string): Layout for cubemap faces.
         texconv (Texconv): Texture converter for dds.
 
     Returns:
         tex (bpy.types.Image): loaded texture
     """
-    texture_name = os.path.basename(file)[:-4]
-
+    tex = None
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
-            temp = os.path.join(temp_dir, "temp.dds")
+            temp = os.path.join(temp_dir, os.path.basename(file))
             shutil.copyfile(file, temp)
             if texconv is None:
                 texconv = Texconv()
 
-            temp_tga = texconv.convert_to_tga(temp, out=temp_dir, invert_normals=invert_normals)
+            temp_tga = texconv.convert_to_tga(temp, out=temp_dir, cubemap_layout=cubemap_layout,
+                                              invert_normals=invert_normals)
             if temp_tga is None:  # if texconv doesn't exist
                 raise RuntimeError('Failed to convert texture.')
-            tex = load_tga(temp_tga, name=texture_name)
+            tex = load_texture(temp_tga, name=os.path.basename(temp_tga)[:-4])
 
     except Exception as e:
         if tex is not None:
             bpy.data.images.remove(tex)
         raise e
 
+    if cubemap_layout.endswith("-fnz"):
+        w, h = tex.size
+        pix = np.array(tex.pixels).reshape((h, w, -1))
+        if cubemap_layout[0] == "v":
+            pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2] = (pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2])[::-1, ::-1]
+        else:
+            pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4] = (pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4])[::-1, ::-1]
+        pix = pix.flatten()
+        tex.pixels = list(pix)
+    tex.update()
     return tex
 
 
@@ -86,6 +101,7 @@ class DDS_OT_import_dds(Operator, ImportHelper):
         layout.use_property_decorate = False  # No animation.
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
+        layout.prop(dds_options, 'cubemap_layout')
 
     def invoke(self, context, event):
         """Invoke."""
@@ -96,22 +112,19 @@ class DDS_OT_import_dds(Operator, ImportHelper):
         if not self.directory:
             raise RuntimeError('"self.directory" is not specified. This is unexpected.')
         for _, file in enumerate(self.files):
-            ret = self.import_uasset(context, os.path.join(self.directory, file.name))
+            ret = self.import_dds(context, os.path.join(self.directory, file.name))
             if ret != {'FINISHED'}:
                 return ret
         return ret
 
-    def import_uasset(self, context, file):
+    def import_dds(self, context, file):
         """Import a file."""
         try:
             start_time = time.time()
-            area = context.area
-            if area.type == 'IMAGE_EDITOR':
-                space = area.spaces.active
-            else:
-                raise RuntimeError('Failed to get Image Editor. This is unexpected.')
+            space = get_image_editor_space(context)
             dds_options = context.scene.dds_options
-            tex = load_dds(file, invert_normals=dds_options.invert_normals)
+            tex = load_dds(file, invert_normals=dds_options.invert_normals,
+                           cubemap_layout=dds_options.cubemap_layout)
             space.image = tex
             elapsed_s = f'{(time.time() - start_time):.2f}s'
             m = f'Success! Imported DDS in {elapsed_s}'
@@ -120,6 +133,7 @@ class DDS_OT_import_dds(Operator, ImportHelper):
             ret = {'FINISHED'}
 
         except Exception as e:
+            print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
         return ret
@@ -139,6 +153,7 @@ class DDS_PT_import_panel(bpy.types.Panel):
         layout.operator(DDS_OT_import_dds.bl_idname, icon='TEXTURE_DATA')
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
+        layout.prop(dds_options, 'cubemap_layout')
 
 
 classes = (

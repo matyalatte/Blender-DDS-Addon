@@ -62,13 +62,13 @@ jobs:
         if: runner.os=='Windows'
         run: |
           cd external/Texconv-Custom-DLL/batch_files
-          ./build_2d_full_support.bat
+          ./build_dds_full_support.bat
       
       - name: build shared library (for Unix)
         if: runner.os!='Windows'
         run: |
           cd external/Texconv-Custom-DLL/shell_scripts
-          bash build_2d_full_support.sh
+          bash build_dds_full_support.sh
 
       - name: Copy files
         run: |

@@ -1,6 +1,7 @@
 """Class for DDS files."""
 
 import ctypes as c
+import copy
 from enum import Enum
 
 from . import util
@@ -9,7 +10,7 @@ from . import util
 # https://docs.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format
 class DXGI_FORMAT(Enum):
     """Enum for DDS format."""
-    DXGI_FORMAT_UNKNOWN = 0,
+    DXGI_FORMAT_UNKNOWN = 0
     DXGI_FORMAT_R32G32B32A32_TYPELESS = 1
     DXGI_FORMAT_R32G32B32A32_FLOAT = 2
     DXGI_FORMAT_R32G32B32A32_UINT = 3
@@ -138,10 +139,15 @@ class DXGI_FORMAT(Enum):
 
 
 DDS_PIXELFORMAT_TO_DXGI = [
-    [['DXT1'], DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM],
-    [['DXT5'], DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM],
-    [['ATI1', 'BC4U'], DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM],
-    [['ATI2', 'BC5U'], DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM]
+    [[b'DXT1'], DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM],
+    [[b'DXT2', b'DXT3'], DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM],
+    [[b'DXT4', b'DXT5'], DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM],
+    [[b'ATI1', b'BC4U'], DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM],
+    [[b'ATI2', b'BC5U'], DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM],
+    [[b'BC4S'], DXGI_FORMAT.DXGI_FORMAT_BC4_SNORM],
+    [[b'BC5S'], DXGI_FORMAT.DXGI_FORMAT_BC5_SNORM],
+    [[b'\x71\x00\x00\x00'], DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_FLOAT],
+    [[b'\x74\x00\x00\x00'], DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT]
 ]
 
 
@@ -200,7 +206,6 @@ def is_hdr(name):
 
 
 class DDSHeader(c.LittleEndianStructure):
-    """Class for dds header."""
     MAGIC = b'\x44\x44\x53\x20'
     _pack_ = 1
     _fields_ = [
@@ -224,33 +229,48 @@ class DDSHeader(c.LittleEndianStructure):
         ("reserved2", c.c_uint32 * 3),  # ReservedCpas, Reserved2
     ]
 
-    def init(self, width, height, mipmap_num, format_name, texture_type):
-        """Constructor."""
+    def init(self, width, height, mipmap_num, format_name):
         self.width = width
         self.height = height
         self.mipmap_num = mipmap_num
         self.format_name = format_name
 
     @staticmethod
-    def read(file_name):
+    def read(f):
         """Read dds header."""
-        with open(file_name, 'rb') as f:
-            head = DDSHeader()
-            f.readinto(head)
-            util.check(head.magic, DDSHeader.MAGIC, msg='Not DDS.')
-            util.check(head.head_size, 124, msg='Not DDS.')
-            head.mipmap_num += head.mipmap_num == 0
+        head = DDSHeader()
+        f.readinto(head)
+        util.check(head.magic, DDSHeader.MAGIC, msg='Not DDS.')
+        util.check(head.head_size, 124, msg='Not DDS.')
+        head.mipmap_num += head.mipmap_num == 0
 
-            # DXT10 header
-            if head.fourCC == b'DX10':
-                head.dxgi_format = DXGI_FORMAT(util.read_uint32(f))      # dxgiFormat
-                util.read_const_uint32(f, 3)         # resourceDimension==3
-                f.seek(4, 1)                    # miscFlag==0 or 4 (0 for 2D textures, 4 for Cube maps)
-                util.read_const_uint32(f, 1)         # arraySize==1
-                f.seek(4, 1)                    # miscFlag2
-            else:
-                head.dxgi_format = get_dds_format(head.fourCC.decode())
+        # DXT10 header
+        if head.fourCC == b'DX10':
+            head.dxgi_format = DXGI_FORMAT(util.read_uint32(f))      # dxgiFormat
+            util.read_const_uint32(f, 3)         # resourceDimension==3
+            f.seek(4, 1)                    # miscFlag==0 or 4 (0 for 2D textures, 4 for Cube maps)
+            util.read_const_uint32(f, 1)         # arraySize==1
+            f.seek(4, 1)                    # miscFlag2
+        else:
+            head.dxgi_format = get_dds_format(head.fourCC)
         return head
+
+    @staticmethod
+    def read_from_file(file_name):
+        """Read dds header from a file."""
+        with open(file_name, 'rb') as f:
+            head = DDSHeader.read(f)
+        return head
+
+    def write(self, f):
+        f.write(self)
+        # DXT10 header
+        if self.fourCC == b'DX10':
+            util.write_uint32(f, self.dxgi_format.value)
+            util.write_uint32(f, 3)
+            util.write_uint32(f, 4 * self.is_cube())
+            util.write_uint32(f, 1)
+            util.write_uint32(f, 0)
 
     def is_cube(self):
         return self.caps2[1] == 254
@@ -280,3 +300,28 @@ class DDSHeader(c.LittleEndianStructure):
     def convertible_to_hdr(self):
         name = self.dxgi_format.name[12:]
         return name in HDR_SUPPORTED
+
+    def to_cubemap(self):
+        self.caps2[1] = 254
+        self.pitch_size *= 6
+
+
+def assemble_cubemap(file_list, new_file):
+    binary_list = []
+
+    for file in file_list:
+        with open(file, "rb") as f:
+            head = DDSHeader.read(f)
+            if head.is_cube() or head.is_3d():
+                raise RuntimeError(f"Can not make a cubemap from non-2D textures. ({file})")
+            binary_list.append(f.read())
+
+    new_head = copy.copy(head)
+    new_head.to_cubemap()
+
+    with open(new_file, "wb") as f:
+        new_head.write(f)
+        for binary in binary_list:
+            f.write(binary)
+
+    return new_file

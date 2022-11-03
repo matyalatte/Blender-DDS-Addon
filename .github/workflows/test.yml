@@ -77,13 +77,13 @@ jobs:
       - name: build dll (for Windows)
         if: runner.os=='Windows'
         run: |
-          external/Texconv-Custom-DLL/batch_files/build_2d_full_support.bat
+          external/Texconv-Custom-DLL/batch_files/build_dds_full_support.bat
           cp external/Texconv-Custom-DLL/texconv.dll addons/blender_dds_addon
       
       - name: build shared library (for Unix)
         if: runner.os!='Windows'
         run: |
-          bash external/Texconv-Custom-DLL/shell_scripts/build_2d_full_support.sh
+          bash external/Texconv-Custom-DLL/shell_scripts/build_dds_full_support.sh
           cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon
       
       - name: Set up Python v${{ matrix.python-version }}

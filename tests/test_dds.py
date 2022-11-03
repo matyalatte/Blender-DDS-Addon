@@ -20,15 +20,22 @@ def test_io(export_format):
 
 
 def test_io_nomip():
-    """Cehck if the addon can import and export dds."""
+    """Test no mip option."""
     tex = import_dds.load_dds(get_test_dds())
     tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", no_mip=True)
     os.remove("saved.dds")
 
 
 def test_io_invert_y():
-    """Cehck if the addon can import and export dds."""
+    """Test invert y option."""
     tex = import_dds.load_dds(get_test_dds())
     tex = export_dds.save_dds(tex, "saved.dds", "BC5_UNORM", invert_normals=True)
     tex = import_dds.load_dds("saved.dds", invert_normals=True)
+    os.remove("saved.dds")
+
+
+def test_io_cubemap():
+    """Test with cubemap."""
+    tex = import_dds.load_dds(os.path.join("tests", "cube.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", export_as_cubemap=True)
     os.remove("saved.dds")

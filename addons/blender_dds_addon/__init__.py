@@ -1,4 +1,4 @@
-"""Blender addon to import .uasset files."""
+"""Blender addon to import .dds files."""
 
 bl_info = {
     'name': 'DDS textures',

@@ -94,53 +94,54 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         else:
             raise RuntimeError("Failed to determine cubemap layout.")
         pix = np.array(tex.pixels).reshape(h, w, -1)
-        textures = []
-        for i in range(6):
-            new_tex = tex.copy()
-            new_tex.name = tex.name + f"_{i}"
-            new_tex.scale(face_size, face_size)
-            new_pix = np.array(new_tex.pixels).reshape(face_size, face_size, -1)
+        temp_tex = tex.copy()
+        temp_tex.scale(face_size, face_size)
+
+        def copy_face(tex, temp_tex, pix, offsets, i, face_size, flip=False):
             x, y = offsets[i]
-            new_pix = pix[y * face_size: (y + 1) * face_size, x * face_size: (x + 1) * face_size]
-            if i == 5 and ('fnz' in cubemap_layout) and (w_ratio in [3, 4]):
-                new_pix = new_pix[::-1, ::-1]
-            new_tex.pixels = list(new_pix.flatten())
-            textures.append(new_tex)
-    else:
-        textures = [tex]
+            temp_tex.name = tex.name + f"_{i}"
+            temp_pix = pix[y * face_size: (y + 1) * face_size, x * face_size: (x + 1) * face_size]
+            if flip:
+                temp_pix = temp_pix[::-1, ::-1]
+            temp_tex.pixels = list(temp_pix.flatten())
+
+    def save_temp_dds(tex, temp_dir, ext, fmt, texconv, verbose=True):
+        temp = os.path.join(temp_dir, tex.name + ext)
+
+        save_texture(tex, temp, fmt)
+
+        temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
+                                          invert_normals=invert_normals, no_mip=no_mip,
+                                          allow_slow_codec=allow_slow_codec, verbose=verbose)
+        if temp_dds is None:
+            raise RuntimeError('Failed to convert texture.')
+        return temp_dds
 
     try:
+        if texconv is None:
+            texconv = Texconv()
+
         with tempfile.TemporaryDirectory() as temp_dir:
-            dds_list = []
-            verbose = True
-            for t in textures:
-                temp = os.path.join(temp_dir, t.name + ext)
-
-                save_texture(t, temp, fmt)
-
-                if texconv is None:
-                    texconv = Texconv()
-
-                temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
-                                                  invert_normals=invert_normals, no_mip=no_mip,
-                                                  allow_slow_codec=allow_slow_codec, verbose=verbose)
-                verbose = False
-                if temp_dds is None:
-                    raise RuntimeError('Failed to convert texture.')
-                dds_list.append(temp_dds)
-            if len(dds_list) > 1:
+            if export_as_cubemap:
+                dds_list = []
+                verbose = True
+                for i in range(6):
+                    flip = (i == 5) and ('fnz' in cubemap_layout) and (w_ratio in [3, 4])
+                    copy_face(tex, temp_tex, pix, offsets, i, face_size, flip)
+                    temp_dds = save_temp_dds(temp_tex, temp_dir, ext, fmt, texconv, verbose)
+                    verbose = False
+                    dds_list.append(temp_dds)
                 temp_dds = assemble_cubemap(dds_list, os.path.join(temp_dir, "temp.dds"))
+                bpy.data.images.remove(temp_tex)
+            else:
+                temp_dds = save_temp_dds(tex, temp_dir, ext, fmt, texconv)
+
             shutil.copyfile(temp_dds, file)
 
     except Exception as e:
-        if export_as_cubemap:
-            for t in textures:
-                bpy.data.images.remove(t)
+        if export_as_cubemap and temp_tex is not None:
+            bpy.data.images.remove(temp_tex)
         raise e
-
-    if export_as_cubemap:
-        for t in textures:
-            bpy.data.images.remove(t)
 
     return tex
 

@@ -14,6 +14,7 @@ import numpy as np
 
 from .texconv import Texconv
 from .export_dds import get_image_editor_space
+from . import util
 
 
 def load_texture(file, name, color_space='Non-Color'):
@@ -28,11 +29,11 @@ def load_texture(file, name, color_space='Non-Color'):
         tex (bpy.types.Image): loaded texture
     """
     tex = bpy.data.images.load(file)
-    tex.pack()
     tex.colorspace_settings.name = color_space
-    tex.filepath = ''
-    tex.filepath_raw = ''
     tex.name = name
+    tex.pack()
+    tex.filepath = os.path.join('//textures', tex.name + '.' + util.get_ext(file))
+    tex.filepath_raw = tex.filepath
     return tex
 
 
@@ -76,7 +77,7 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
             pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4] = (pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4])[::-1, ::-1]
         pix = pix.flatten()
         tex.pixels = list(pix)
-        tex.update()
+    tex.update()
     return tex
 
 

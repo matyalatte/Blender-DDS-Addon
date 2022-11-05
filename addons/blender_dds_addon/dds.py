@@ -138,16 +138,34 @@ class DXGI_FORMAT(Enum):
         return fmt in cls._member_names_
 
 
+MAX_DXGI_FMT = 132
+
+
+def int_to_byte(n, length=1):
+    return n.to_bytes(length, byteorder="little")
+
+
 DDS_PIXELFORMAT_TO_DXGI = [
     [[b'DXT1'], DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM],
     [[b'DXT2', b'DXT3'], DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM],
     [[b'DXT4', b'DXT5'], DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM],
-    [[b'ATI1', b'BC4U'], DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM],
-    [[b'ATI2', b'BC5U'], DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM],
+    [[b'ATI1', b'BC4U', b'3DC1'], DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM],
+    [[b'ATI2', b'BC5U', b'3DC2'], DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM],
     [[b'BC4S'], DXGI_FORMAT.DXGI_FORMAT_BC4_SNORM],
     [[b'BC5S'], DXGI_FORMAT.DXGI_FORMAT_BC5_SNORM],
-    [[b'\x71\x00\x00\x00'], DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_FLOAT],
-    [[b'\x74\x00\x00\x00'], DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT]
+    [[b'BC6H'], DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16],
+    [[b'BC7L', b'BC7'], DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM],
+    [[b'RGBG'], DXGI_FORMAT.DXGI_FORMAT_R8G8_B8G8_UNORM],
+    [[b'GRGB'], DXGI_FORMAT.DXGI_FORMAT_G8R8_G8B8_UNORM],
+    [[b'YUY2', b'UYVY'], DXGI_FORMAT.DXGI_FORMAT_YUY2],
+    [[int_to_byte(36)], DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_UNORM],
+    [[int_to_byte(110)], DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_SNORM],
+    [[int_to_byte(111)], DXGI_FORMAT.DXGI_FORMAT_R16_FLOAT],
+    [[int_to_byte(112)], DXGI_FORMAT.DXGI_FORMAT_R16G16_FLOAT],
+    [[int_to_byte(113)], DXGI_FORMAT.DXGI_FORMAT_R16G16B16A16_FLOAT],
+    [[int_to_byte(114)], DXGI_FORMAT.DXGI_FORMAT_R32_FLOAT],
+    [[int_to_byte(115)], DXGI_FORMAT.DXGI_FORMAT_R32G32_FLOAT],
+    [[int_to_byte(116)], DXGI_FORMAT.DXGI_FORMAT_R32G32B32A32_FLOAT]
 ]
 
 
@@ -189,6 +207,26 @@ TGA_SUPPORTED = [
     "R8_UNORM",
     "A8_UNORM",
     "B5G5R5A1_UNORM"
+]
+
+# fourCC for uncanonical formats (ETC, PVRTC, ATITC, ASTC)
+UNCANONICAL_FOURCC = [
+    b"ETC",
+    b"ETC1",
+    b"ETC2",
+    b"ET2A",
+    b"PTC2",
+    b"PTC4",
+    b"ATC",
+    b"ATCA",
+    b"ATCE",
+    b"ATCI",
+    b"AS44",
+    b"AS55",
+    b"AS66",
+    b"AS85",
+    b"AS86",
+    b"AS:5"
 ]
 
 
@@ -246,7 +284,13 @@ class DDSHeader(c.LittleEndianStructure):
 
         # DXT10 header
         if head.fourCC == b'DX10':
-            head.dxgi_format = DXGI_FORMAT(util.read_uint32(f))      # dxgiFormat
+            fmt = util.read_uint32(f)
+            if fmt > MAX_DXGI_FMT:
+                raise RuntimeError(
+                    (f"Non-standard DXGI format detected. ({fmt})\n"
+                     "Customized formats (e.g. ETC, PVRTC, ATITC, and ASTC) are unsupported.")
+                )
+            head.dxgi_format = DXGI_FORMAT(fmt)      # dxgiFormat
             util.read_const_uint32(f, 3)         # resourceDimension==3
             f.seek(4, 1)                    # miscFlag==0 or 4 (0 for 2D textures, 4 for Cube maps)
             util.read_const_uint32(f, 1)         # arraySize==1
@@ -304,6 +348,9 @@ class DDSHeader(c.LittleEndianStructure):
     def to_cubemap(self):
         self.caps2[1] = 254
         self.pitch_size *= 6
+
+    def is_canonical(self):
+        return self.fourCC not in UNCANONICAL_FOURCC
 
 
 def assemble_cubemap(file_list, new_file):

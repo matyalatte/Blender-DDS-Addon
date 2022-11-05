@@ -59,11 +59,18 @@ class Texconv:
     def convert_to_tga(self, file, out=None, cubemap_layout="v-cross", invert_normals=False, verbose=True):
         """Convert dds to tga."""
         dds_header = DDSHeader.read_from_file(file)
-        if verbose:
-            print(f'DXGI_FORMAT: {dds_header.get_format_as_str()[12:]}')
 
         if dds_header.is_3d():
             raise RuntimeError('Can not convert 3D textures with texconv.')
+
+        if not dds_header.is_canonical():
+            raise RuntimeError(
+                (f"Non-standard format detected. ({dds_header.fourCC.decode()})"
+                 "Customized formats (e.g. ETC, PVRTC, ATITC, and ASTC) are unsupported.")
+            )
+
+        if verbose:
+            print(f'DXGI_FORMAT: {dds_header.get_format_as_str()[12:]}')
 
         args = []
 
@@ -100,12 +107,14 @@ class Texconv:
     def convert_to_dds(self, file, dds_fmt, out=None,
                        invert_normals=False, no_mip=False, verbose=True, allow_slow_codec=False):
         """Convert texture to dds."""
-        if not DXGI_FORMAT.is_valid_format("DXGI_FORMAT_" + dds_fmt):
-            raise RuntimeError(f'Not DXGI format. ({dds_fmt})')
+
         if is_hdr(dds_fmt) and file[-3:].lower() != 'hdr':
             raise RuntimeError(f'Use .hdr for HDR textures. ({file})')
         if ('BC6' in dds_fmt or 'BC7' in dds_fmt) and (not util.is_windows()) and (not allow_slow_codec):
             raise RuntimeError(f'Can NOT use CPU codec for {dds_fmt}. Or enable the "Allow Slow Codec" option.')
+
+        if not DXGI_FORMAT.is_valid_format("DXGI_FORMAT_" + dds_fmt):
+            raise RuntimeError(f'Not DXGI format. ({dds_fmt})')
 
         if verbose:
             print(f'DXGI_FORMAT: {dds_fmt}')

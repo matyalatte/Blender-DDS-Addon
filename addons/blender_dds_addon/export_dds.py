@@ -16,7 +16,7 @@ from bpy.types import Operator, PropertyGroup
 from bpy_extras.io_utils import ExportHelper
 import numpy as np
 
-from .dds import DXGI_FORMAT, is_hdr, assemble_cubemap
+from .dds import DXGI_FORMAT, is_hdr
 from .texconv import Texconv
 
 
@@ -73,9 +73,10 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         ext = '.tga'
         fmt = 'TARGA_RAW'
 
-    if export_as_cubemap:
-        w, h = tex.size
+    w, h = tex.size
 
+    if export_as_cubemap:
+        # Check aspect ratio
         def gcd(m, n):
             r = m % n
             return gcd(n, r) if r else n
@@ -83,27 +84,35 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         face_size = gcd(w, h)
         w_ratio = w // face_size
         h_ratio = h // face_size
-        if w_ratio == 1 and h_ratio == 6:
-            offsets = [[0, i] for i in range(6)]
-        elif w_ratio == 6 and h_ratio == 1:
-            offsets = [[i, 0] for i in range(6)]
-        elif w_ratio == 4 and h_ratio == 3:
-            offsets = [[2, 1], [0, 1], [1, 2], [1, 0], [1, 1], [3, 1]]
-        elif w_ratio == 3 and h_ratio == 4:
-            offsets = [[2, 2], [0, 2], [1, 3], [1, 1], [1, 2], [1, 0]]
-        else:
-            raise RuntimeError("Failed to determine cubemap layout.")
-        pix = np.array(tex.pixels).reshape(h, w, -1)
-        temp_tex = tex.copy()
-        temp_tex.scale(face_size, face_size)
 
-        def copy_face(tex, temp_tex, pix, offsets, i, face_size, flip=False):
-            x, y = offsets[i]
-            temp_tex.name = tex.name + f"_{i}"
-            temp_pix = pix[y * face_size: (y + 1) * face_size, x * face_size: (x + 1) * face_size]
-            if flip:
-                temp_pix = temp_pix[::-1, ::-1]
-            temp_tex.pixels = list(temp_pix.flatten())
+        expected_ratio_dict = {
+            "h-cross": [4, 3],
+            "v-cross": [3, 4],
+            "h-cross-fnz": [4, 3],
+            "v-cross-fnz": [3, 4],
+            "h-strip": [6, 1],
+            "v-strip": [1, 6]
+        }
+
+        expected_ratio = expected_ratio_dict[cubemap_layout]
+
+        if w_ratio != expected_ratio[0] or h_ratio != expected_ratio[1]:
+            raise RuntimeError((
+                f"{cubemap_layout} expects {expected_ratio[0]}:{expected_ratio[1]} aspect ratio "
+                f"but the actual ratio is {w_ratio}:{h_ratio}."
+            ))
+
+    def get_z_flipped(tex):
+        if cubemap_layout == "h-cross-fnz":
+            offset = [3, 1]
+        elif cubemap_layout == "v-cross-fnz":
+            offset = [1, 0]
+        temp_tex = tex.copy()
+        pix = np.array(tex.pixels).reshape(h, w, -1)
+        x, y = [c * face_size for c in offset]
+        pix[y: y + face_size, x: x + face_size] = pix[y: y + face_size, x: x + face_size][::-1, ::-1]
+        temp_tex.pixels = list(pix.flatten())
+        return temp_tex
 
     def save_temp_dds(tex, temp_dir, ext, fmt, texconv, verbose=True):
         temp = os.path.join(temp_dir, tex.name + ext)
@@ -112,26 +121,21 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
 
         temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
                                           invert_normals=invert_normals, no_mip=no_mip,
+                                          export_as_cubemap=export_as_cubemap,
+                                          cubemap_layout=cubemap_layout,
                                           allow_slow_codec=allow_slow_codec, verbose=verbose)
         if temp_dds is None:
             raise RuntimeError('Failed to convert texture.')
         return temp_dds
 
     try:
-        if texconv is None:
-            texconv = Texconv()
+        temp_tex = None
+        texconv = Texconv()
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            if export_as_cubemap:
-                dds_list = []
-                verbose = True
-                for i in range(6):
-                    flip = (i == 5) and ('fnz' in cubemap_layout) and (w_ratio in [3, 4])
-                    copy_face(tex, temp_tex, pix, offsets, i, face_size, flip)
-                    temp_dds = save_temp_dds(temp_tex, temp_dir, ext, fmt, texconv, verbose)
-                    verbose = False
-                    dds_list.append(temp_dds)
-                temp_dds = assemble_cubemap(dds_list, os.path.join(temp_dir, "temp.dds"))
+            if export_as_cubemap and ('fnz' in cubemap_layout):
+                temp_tex = get_z_flipped(tex)
+                temp_dds = save_temp_dds(temp_tex, temp_dir, ext, fmt, texconv)
                 bpy.data.images.remove(temp_tex)
             else:
                 temp_dds = save_temp_dds(tex, temp_dir, ext, fmt, texconv)
@@ -139,7 +143,7 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
             shutil.copyfile(temp_dds, file)
 
     except Exception as e:
-        if export_as_cubemap and temp_tex is not None:
+        if temp_tex is not None:
             bpy.data.images.remove(temp_tex)
         raise e
 

@@ -33,7 +33,7 @@ It'll clone external repositories to the addon's repo.
 If you are using non-Windows platforms, you should download [sal.h](https://github.com/dotnet/corert/blob/master/src/Native/inc/unix/sal.h)
 for DirectXMath.  
 Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL/shell_scripts`.  
-Then, type `get_sal.sh`.  
+Then, type `bash get_sal.sh`.  
 It'll download the file and place it in a proper location.  
 
 ## 3. Build Texconv

@@ -1,7 +1,6 @@
 """Class for DDS files."""
 
 import ctypes as c
-import copy
 from enum import Enum
 
 from . import util
@@ -170,9 +169,12 @@ DDS_PIXELFORMAT_TO_DXGI = [
 
 
 HDR_SUPPORTED = [
+    # Convertible as a decompressed format
     "BC6H_TYPELESS",
     "BC6H_UF16",
     "BC6H_SF16",
+
+    # Directory convertible
     "R32G32B32A32_FLOAT",
     "R16G16B16A16_FLOAT",
     "R32G32B32_FLOAT"
@@ -241,6 +243,14 @@ def get_dds_format(fmt):
 
 def is_hdr(name):
     return 'BC6' in name or 'FLOAT' in name
+
+
+def convertible_to_tga(name):
+    return name in TGA_SUPPORTED
+
+
+def convertible_to_hdr(name):
+    return name in HDR_SUPPORTED
 
 
 class DDSHeader(c.LittleEndianStructure):
@@ -339,11 +349,11 @@ class DDSHeader(c.LittleEndianStructure):
 
     def convertible_to_tga(self):
         name = self.dxgi_format.name[12:]
-        return name in TGA_SUPPORTED
+        return convertible_to_tga(name)
 
     def convertible_to_hdr(self):
         name = self.dxgi_format.name[12:]
-        return name in HDR_SUPPORTED
+        return convertible_to_hdr(name)
 
     def to_cubemap(self):
         self.caps2[1] = 254
@@ -351,24 +361,3 @@ class DDSHeader(c.LittleEndianStructure):
 
     def is_canonical(self):
         return self.fourCC not in UNCANONICAL_FOURCC
-
-
-def assemble_cubemap(file_list, new_file):
-    binary_list = []
-
-    for file in file_list:
-        with open(file, "rb") as f:
-            head = DDSHeader.read(f)
-            if head.is_cube() or head.is_3d():
-                raise RuntimeError(f"Can not make a cubemap from non-2D textures. ({file})")
-            binary_list.append(f.read())
-
-    new_head = copy.copy(head)
-    new_head.to_cubemap()
-
-    with open(new_file, "wb") as f:
-        new_head.write(f)
-        for binary in binary_list:
-            f.write(binary)
-
-    return new_file

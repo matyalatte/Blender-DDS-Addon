@@ -6,8 +6,9 @@ Notes:
 """
 import ctypes
 import os
+import tempfile
 
-from .dds import DDSHeader, DXGI_FORMAT, is_hdr
+from .dds import DDSHeader, DXGI_FORMAT, is_hdr, convertible_to_hdr, convertible_to_tga
 from . import util
 
 
@@ -32,17 +33,8 @@ class Texconv:
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
 
-    def run(self, args, verbose=True, allow_slow_codec=False):
-        """Run texconv with args."""
-        args_p = [ctypes.c_wchar_p(arg) for arg in args]
-        args_p = (ctypes.c_wchar_p*len(args_p))(*args_p)
-        err_buf = ctypes.create_unicode_buffer(512)
-        result = self.dll.texconv(len(args), args_p, verbose, False, allow_slow_codec, err_buf, 512)
-        if result != 0:
-            raise RuntimeError(err_buf.value)
-
-    def convert(self, file, args, out=None, verbose=True, allow_slow_codec=False):
-        """Convert a texture with args."""
+    def texconv(self, file, args, out=None, verbose=True, allow_slow_codec=False):
+        """Run texconv."""
         if out is not None and isinstance(out, str):
             args += ['-o', out]
         else:
@@ -53,10 +45,17 @@ class Texconv:
 
         args += ["-y"]
         args += [os.path.normpath(file)]
-        self.run(args, verbose=verbose, allow_slow_codec=allow_slow_codec)
+
+        args_p = [ctypes.c_wchar_p(arg) for arg in args]
+        args_p = (ctypes.c_wchar_p*len(args_p))(*args_p)
+        err_buf = ctypes.create_unicode_buffer(512)
+        result = self.dll.texconv(len(args), args_p, verbose, False, allow_slow_codec, err_buf, 512)
+        if result != 0:
+            raise RuntimeError(err_buf.value)
+
         return out
 
-    def convert_to_tga(self, file, out=None, cubemap_layout="v-cross", invert_normals=False, verbose=True):
+    def convert_to_tga(self, file, out=None, cubemap_layout="h-cross", invert_normals=False, verbose=True):
         """Convert dds to tga."""
         dds_header = DDSHeader.read_from_file(file)
 
@@ -97,18 +96,23 @@ class Texconv:
 
         if dds_header.is_cube():
             name = ".".join(file.split(".")[:-1] + [fmt])
-            self.texassemble(file, name, args, cubemap_layout=cubemap_layout, verbose=verbose)
+            self.cube_to_image(file, name, args, cubemap_layout=cubemap_layout, verbose=verbose)
         else:
-            out = self.convert(file, args, out=out, verbose=verbose)
+            out = self.texconv(file, args, out=out, verbose=verbose)
             name = os.path.join(out, os.path.basename(file))
             name = '.'.join(name.split('.')[:-1] + [fmt])
         return name
 
     def convert_to_dds(self, file, dds_fmt, out=None,
-                       invert_normals=False, no_mip=False, verbose=True, allow_slow_codec=False):
+                       invert_normals=False, no_mip=False,
+                       export_as_cubemap=False,
+                       cubemap_layout="h-cross",
+                       verbose=True, allow_slow_codec=False):
         """Convert texture to dds."""
 
-        if is_hdr(dds_fmt) and file[-3:].lower() != 'hdr':
+        ext = util.get_ext(file).lower()
+
+        if is_hdr(dds_fmt) and ext != 'hdr':
             raise RuntimeError(f'Use .hdr for HDR textures. ({file})')
         if ('BC6' in dds_fmt or 'BC7' in dds_fmt) and (not util.is_windows()) and (not allow_slow_codec):
             raise RuntimeError(f'Can NOT use CPU codec for {dds_fmt}. Or enable the "Allow Slow Codec" option.')
@@ -118,6 +122,10 @@ class Texconv:
 
         if verbose:
             print(f'DXGI_FORMAT: {dds_fmt}')
+
+        base_name = os.path.basename(file)
+        base_name = '.'.join(base_name.split('.')[:-1] + ['dds'])
+
         args = ['-f', dds_fmt]
         if no_mip:
             args += ['-m', '1']
@@ -125,20 +133,43 @@ class Texconv:
         if ("BC5" in dds_fmt) and invert_normals:
             args += ['-inverty']
 
-        out = self.convert(file, args, out=out, verbose=verbose, allow_slow_codec=allow_slow_codec)
-        name = os.path.join(out, os.path.basename(file))
-        name = '.'.join(name.split('.')[:-1] + ['dds'])
+        if export_as_cubemap:
+            temp_args = []
+            if ext == "hdr":
+                if not convertible_to_hdr(dds_fmt):
+                    temp_args += ['-f', 'fp32']
+            else:
+                if not convertible_to_tga(dds_fmt):
+                    temp_args += ['-f', 'rgba']
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_dds = os.path.join(temp_dir, base_name)
+                self.image_to_cube(file, temp_dds, temp_args, cubemap_layout=cubemap_layout, verbose=verbose)
+                out = self.texconv(temp_dds, args, out=out, verbose=verbose, allow_slow_codec=allow_slow_codec)
+        else:
+            out = self.texconv(file, args, out=out, verbose=verbose, allow_slow_codec=allow_slow_codec)
+        name = os.path.join(out, base_name)
         return name
 
-    def texassemble(self, file, new_file, args, cubemap_layout="v-cross", verbose=True):
-        """Run texassemble with args."""
+    def cube_to_image(self, file, new_file, args, cubemap_layout="h-cross", verbose=True):
+        """Genarate an image from a cubemap with texassemble."""
+        if cubemap_layout.endswith("-fnz"):
+            cubemap_layout = cubemap_layout[:-4]
+        args = [cubemap_layout] + args
+        self.texassemble(file, new_file, args, verbose=verbose)
+
+    def image_to_cube(self, file, new_file, args, cubemap_layout="h-cross", verbose=True):
+        """Generate a cubemap from an image with texassemble."""
+        cmd = "cube-from-" + cubemap_layout[0] + cubemap_layout[2]
+        args = [cmd] + args
+        self.texassemble(file, new_file, args, verbose=verbose)
+
+    def texassemble(self, file, new_file, args, verbose=True):
+        """Run texassemble."""
         out = os.path.dirname(new_file)
         if out not in ['.', ''] and not os.path.exists(out):
             util.mkdir(out)
         args += ["-y", "-o", new_file, file]
-        if cubemap_layout.endswith("-fnz"):
-            cubemap_layout = cubemap_layout[:-4]
-        args = [cubemap_layout] + args
+
         args_p = [ctypes.c_wchar_p(arg) for arg in args]
         args_p = (ctypes.c_wchar_p*len(args_p))(*args_p)
         err_buf = ctypes.create_unicode_buffer(512)

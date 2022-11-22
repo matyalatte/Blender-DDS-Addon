@@ -117,5 +117,5 @@ Files in this repository (including all submodules) are licensed under [MIT lice
 
 There are some documents for developers.
 
-- [How to Build](./How-To-Build.md): See here if you want to know how to create a zip form the repository.
+- [How to Build](./How-To-Build.md): See here if you want to know how to create a zip from the repository.
 - [Tools for development](./For-Dev.md): See here if you want to know how to test the addon.

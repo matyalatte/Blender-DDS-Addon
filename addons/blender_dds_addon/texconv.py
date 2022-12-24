@@ -18,13 +18,14 @@ class Texconv:
         if dll_path is None:
             file_path = os.path.realpath(__file__)
             if util.is_windows():
-                dll_path = os.path.join(os.path.dirname(file_path), "texconv.dll")
+                dll_name = "texconv.dll"
             elif util.is_mac():
-                dll_path = os.path.join(os.path.dirname(file_path), "libtexconv.dylib")
+                dll_name = "libtexconv.dylib"
             elif util.is_linux():
-                dll_path = os.path.join(os.path.dirname(file_path), "libtexconv.so")
+                dll_name = "libtexconv.so"
             else:
                 raise RuntimeError(f'This OS ({util.get_os_name()}) is unsupported.')
+            dll_path = os.path.join(os.path.dirname(file_path), dll_name)
 
         dll_path = os.path.abspath(dll_path)
 
@@ -61,12 +62,6 @@ class Texconv:
 
         if dds_header.is_3d():
             raise RuntimeError('Can not convert 3D textures with texconv.')
-
-        if not dds_header.is_canonical():
-            raise RuntimeError(
-                (f"Non-standard format detected. ({dds_header.fourCC.decode()})"
-                 "Customized formats (e.g. ETC, PVRTC, ATITC, and ASTC) are unsupported.")
-            )
 
         if verbose:
             print(f'DXGI_FORMAT: {dds_header.get_format_as_str()[12:]}')
@@ -134,13 +129,10 @@ class Texconv:
             args += ['-inverty']
 
         if export_as_cubemap:
-            temp_args = []
             if ext == "hdr":
-                if not convertible_to_hdr(dds_fmt):
-                    temp_args += ['-f', 'fp32']
+                temp_args = ['-f', 'fp32']
             else:
-                if not convertible_to_tga(dds_fmt):
-                    temp_args += ['-f', 'rgba']
+                temp_args = ['-f', 'rgba']
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_dds = os.path.join(temp_dir, base_name)
                 self.image_to_cube(file, temp_dds, temp_args, cubemap_layout=cubemap_layout, verbose=verbose)

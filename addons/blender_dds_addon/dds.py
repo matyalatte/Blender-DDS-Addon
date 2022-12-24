@@ -254,27 +254,27 @@ def convertible_to_hdr(name):
 
 
 class DDSHeader(c.LittleEndianStructure):
-    MAGIC = b'\x44\x44\x53\x20'
+    MAGIC = b'DDS '
     _pack_ = 1
     _fields_ = [
-        ("magic", c.c_char * 4),  # Magic=='DDS '
-        ("head_size", c.c_uint32),  # Size==124
-        ("flags", c.c_uint8 * 4),  # [7, 16, 8+2*hasMips, 0]
+        ("magic", c.c_char * 4),             # Magic == 'DDS '
+        ("head_size", c.c_uint32),           # Size == 124
+        ("flags", c.c_uint8 * 4),            # [7, 16, 8 + 2 * hasMips, 0]
         ("height", c.c_uint32),
         ("width", c.c_uint32),
-        ("pitch_size", c.c_uint32),  # Data size of the largest mipmap
+        ("pitch_size", c.c_uint32),          # Data size of the largest mipmap
         ("depth", c.c_uint32),
         ("mipmap_num", c.c_uint32),
-        ("reserved", c.c_uint32 * 9),  # Reserved1
-        ("tool_name", c.c_char * 4),  # Reserved1
-        ("null", c.c_uint32),  # Reserved1
-        ("pfsize", c.c_uint32),  # PfSize==32
-        ("pfflags", c.c_uint32),  # PfFlags==4
-        ("fourCC", c.c_char * 4),  # FourCC
-        ("bit_count_mask", c.c_uint32 * 5),  # Bitcount, Bitmask (null*5)
-        ("caps", c.c_uint8 * 4),  # [8*hasMips, 16, 64*hasMips, 0]
-        ("caps2", c.c_uint8 * 4),  # [0, 254*isCubeMap, 0, 0]
-        ("reserved2", c.c_uint32 * 3),  # ReservedCpas, Reserved2
+        ("reserved", c.c_uint32 * 9),        # Reserved1
+        ("tool_name", c.c_char * 4),         # Reserved1
+        ("null", c.c_uint32),                # Reserved1
+        ("pfsize", c.c_uint32),              # PfSize == 32
+        ("pfflags", c.c_uint32),             # PfFlags == 4
+        ("fourCC", c.c_char * 4),            # FourCC
+        ("bit_count_mask", c.c_uint32 * 5),  # Bitcount, Bitmask (null * 5)
+        ("caps", c.c_uint8 * 4),             # [8 * hasMips, 16, 64 * hasMips, 0]
+        ("caps2", c.c_uint8 * 4),            # [0, 254 * isCubeMap, 0, 0]
+        ("reserved2", c.c_uint32 * 3),       # ReservedCpas, Reserved2
     ]
 
     def init(self, width, height, mipmap_num, format_name):
@@ -292,19 +292,22 @@ class DDSHeader(c.LittleEndianStructure):
         util.check(head.head_size, 124, msg='Not DDS.')
         head.mipmap_num += head.mipmap_num == 0
 
+        ERR_MSG = "Customized formats (e.g. ETC, PVRTC, ATITC, and ASTC) are unsupported."
+
+        if not head.is_canonical():
+            raise RuntimeError(f"Non-standard fourCC detected. ({head.fourCC.decode()})\n" + ERR_MSG)
+
         # DXT10 header
         if head.fourCC == b'DX10':
             fmt = util.read_uint32(f)
             if fmt > MAX_DXGI_FMT:
-                raise RuntimeError(
-                    (f"Non-standard DXGI format detected. ({fmt})\n"
-                     "Customized formats (e.g. ETC, PVRTC, ATITC, and ASTC) are unsupported.")
-                )
-            head.dxgi_format = DXGI_FORMAT(fmt)      # dxgiFormat
-            util.read_const_uint32(f, 3)         # resourceDimension==3
-            f.seek(4, 1)                    # miscFlag==0 or 4 (0 for 2D textures, 4 for Cube maps)
-            util.read_const_uint32(f, 1)         # arraySize==1
-            f.seek(4, 1)                    # miscFlag2
+                raise RuntimeError(f"Non-standard DXGI format detected. ({fmt})\n" + ERR_MSG)
+
+            head.dxgi_format = DXGI_FORMAT(fmt)  # dxgiFormat
+            util.read_const_uint32(f, 3)         # resourceDimension == 3
+            f.seek(4, 1)                         # miscFlag == 0 or 4 (0 for 2D textures, 4 for Cube maps)
+            util.read_const_uint32(f, 1)         # arraySize == 1
+            f.seek(4, 1)                         # miscFlag2
         else:
             head.dxgi_format = get_dds_format(head.fourCC)
         return head
@@ -347,6 +350,10 @@ class DDSHeader(c.LittleEndianStructure):
     def is_int(self):
         return 'UINT' in self.dxgi_format.name or 'SINT' in self.dxgi_format.name
 
+
+    def is_canonical(self):
+        return self.fourCC not in UNCANONICAL_FOURCC
+
     def convertible_to_tga(self):
         name = self.dxgi_format.name[12:]
         return convertible_to_tga(name)
@@ -354,10 +361,3 @@ class DDSHeader(c.LittleEndianStructure):
     def convertible_to_hdr(self):
         name = self.dxgi_format.name[12:]
         return convertible_to_hdr(name)
-
-    def to_cubemap(self):
-        self.caps2[1] = 254
-        self.pitch_size *= 6
-
-    def is_canonical(self):
-        return self.fourCC not in UNCANONICAL_FOURCC

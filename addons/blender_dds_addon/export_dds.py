@@ -16,7 +16,8 @@ from bpy.types import Operator, PropertyGroup
 from bpy_extras.io_utils import ExportHelper
 import numpy as np
 
-from .dds import DXGI_FORMAT, is_hdr
+from .dds import is_hdr
+from .dxgi_format import DXGI_FORMAT
 from .texconv import Texconv
 
 

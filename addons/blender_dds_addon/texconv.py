@@ -8,7 +8,8 @@ import ctypes
 import os
 import tempfile
 
-from .dds import DDSHeader, DXGI_FORMAT, is_hdr, convertible_to_hdr, convertible_to_tga
+from .dds import DDSHeader, is_hdr
+from .dxgi_format import DXGI_FORMAT
 from . import util
 
 

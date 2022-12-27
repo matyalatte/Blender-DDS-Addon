@@ -18,7 +18,7 @@ If you won't use Visual Studio 2022, you could need to edit cmake commands in ba
 ### for Unix
 
 - xcode (for macOS)
-- build-essential (for Linux)
+- build-essential (for Ubuntu)
 - cmake
 - wget
 

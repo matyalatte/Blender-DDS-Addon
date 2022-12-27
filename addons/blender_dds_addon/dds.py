@@ -83,7 +83,7 @@ TGA_SUPPORTED = [
 
 
 def is_hdr(name):
-    return 'BC6' in name or 'FLOAT' in name
+    return 'BC6' in name or 'FLOAT' in name or 'INT' in name or 'SNORM' in name
 
 
 def convertible_to_tga(name):

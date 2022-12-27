@@ -130,11 +130,10 @@ class DXGI_FORMAT(Enum):
     DXGI_FORMAT_P208 = 130
     DXGI_FORMAT_V208 = 131
     DXGI_FORMAT_V408 = 132
+
+    # non-official formats
     DXGI_FORMAT_ASTC_4X4_TYPELESS = 133
     DXGI_FORMAT_ASTC_4X4_UNORM = 134
-    # DXGI_FORMAT_SAMPLER_FEEDBACK_MIN_MIP_OPAQUE
-    # DXGI_FORMAT_SAMPLER_FEEDBACK_MIP_REGION_USED_OPAQUE
-    DXGI_FORMAT_FORCE_UINT = 0xffffffff
 
     @classmethod
     def is_valid_format(cls, fmt_name):

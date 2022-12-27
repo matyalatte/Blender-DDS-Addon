@@ -1,4 +1,4 @@
-# Blender-DDS-Addon v0.1.2
+# Blender-DDS-Addon v0.1.3
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![build](https://github.com/matyalatte/Blender-DDS-Addon/actions/workflows/build.yml/badge.svg)
@@ -23,8 +23,9 @@ You can download zip files from [the release page](https://github.com/matyalatte
 -   `blender_dds_addon*_macOS.zip` is for Mac (10.15 or later).
 -   `blender_dds_addon*_Linux.zip` is for Ubuntu (20.04 or later).
 
-If you want to use the addon on other platforms, you need to build [Texconv](https://github.com/matyalatte/Texconv-Custom-DLL) by yourself and zip it with python scripts.  
-(But I don't know if it's possible on your platform.)  
+> The linux build only supports Ubuntu due to the glibc dependences.  
+> If you want to use it on other linux distributions, you should get the lib or build [Texconv](https://github.com/matyalatte/Texconv-Custom-DLL) by yourself.  
+> (But I don't know if it's possible on your platform.)  
 
 ## Getting Started
 
@@ -54,29 +55,52 @@ Here is a list of supported formats.
 * BC7_UNORM
 * BC7_UNORM_SRGB
 * R32G32B32A32_FLOAT
+* R32G32B32A32_UINT
+* R32G32B32A32_SINT
 * R32G32B32_FLOAT
+* R32G32B32_UINT
+* R32G32B32_SINT
 * R16G16B16A16_FLOAT
 * R16G16B16A16_UNORM
+* R16G16B16A16_UINT
 * R16G16B16A16_SNORM
+* R16G16B16A16_SINT
 * R32G32_FLOAT
+* R32G32_UINT
+* R32G32_SINT
+* D32_FLOAT_S8X24_UINT
 * R10G10B10A2_UNORM
+* R10G10B10A2_UINT
 * R11G11B10_FLOAT
 * R8G8B8A8_UNORM
 * R8G8B8A8_UNORM_SRGB
+* R8G8B8A8_UINT
 * R8G8B8A8_SNORM
+* R8G8B8A8_SINT
 * R16G16_FLOAT
 * R16G16_UNORM
+* R16G16_UINT
 * R16G16_SNORM
+* R16G16_SINT
 * D32_FLOAT
 * R32_FLOAT
+* R32_UINT
+* R32_SINT
+* D24_UNORM_S8_UINT
 * R8G8_UNORM
+* R8G8_UINT
 * R8G8_SNORM
+* R8G8_SINT
 * R16_FLOAT
 * D16_UNORM
 * R16_UNORM
+* R16_UINT
 * R16_SNORM
+* R16_SINT
 * R8_UNORM
+* R8_UINT
 * R8_SNORM
+* R8_SINT
 * A8_UNORM
 * R1_UNORM
 * R9G9B9E5_SHAREDEXP

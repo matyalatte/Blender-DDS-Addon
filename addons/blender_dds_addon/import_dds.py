@@ -13,6 +13,7 @@ from bpy_extras.io_utils import ImportHelper
 import numpy as np
 
 from .texconv import Texconv
+from .dds import DDSHeader
 from .export_dds import get_image_editor_space
 from . import util
 
@@ -61,7 +62,15 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
                                               invert_normals=invert_normals)
             if temp_tga is None:  # if texconv doesn't exist
                 raise RuntimeError('Failed to convert texture.')
-            tex = load_texture(temp_tga, name=os.path.basename(temp_tga)[:-4])
+
+            # Check color space
+            dds_header = DDSHeader.read_from_file(temp)
+            if dds_header.is_srgb():
+                color_space = 'sRGB'
+            else:
+                color_space = 'Non-Color'
+
+            tex = load_texture(temp_tga, name=os.path.basename(temp_tga)[:-4], color_space=color_space)
 
     except Exception as e:
         if tex is not None:

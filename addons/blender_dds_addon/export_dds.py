@@ -67,6 +67,15 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
     Returns:
         tex (bpy.types.Image): loaded texture
     """
+    # Check color space
+    color_space = tex.colorspace_settings.name
+    if 'SRGB' in dds_fmt and color_space != 'sRGB':
+        print("Warning: Specified DXGI format uses sRGB as a color space,"
+              f"but the texture uses {color_space} in Blender")
+    elif 'SRGB' not in dds_fmt and color_space not in ['Non-Color', 'Raw']:
+        print("Warning: Specified DXGI format does not use any color space conversion,"
+              f"but the texture uses {color_space} in Blender")
+
     if is_hdr(dds_fmt):
         ext = '.hdr'
         fmt = 'HDR'
@@ -170,7 +179,7 @@ def get_alt_fmt(fmt):
 
 
 def is_supported(fmt):
-    return ('TYPELESS' not in fmt) and ('INT' not in fmt) and \
+    return ('TYPELESS' not in fmt) and ('ASTC' not in fmt) and\
            (len(fmt) > 4) and (fmt not in ["UNKNOWN", "420_OPAQUE"])
 
 

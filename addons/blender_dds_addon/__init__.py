@@ -3,7 +3,7 @@
 bl_info = {
     'name': 'DDS textures',
     'author': 'Matyalatte',
-    'version': (0, 1, 3),
+    'version': (0, 2, 0),
     'blender': (2, 83, 20),
     'location': 'Image Editor > Sidebar > DDS Tab',
     'description': 'Import and export .dds files',
@@ -32,18 +32,22 @@ try:
     if ".import_dds" in locals():
         reload_package(locals())
 
-    from . import import_dds, export_dds
+    from .ui import import_dds, export_dds, set_properties, preferences
 
     def register():
         """Add addon."""
+        preferences.register()
         import_dds.register()
         export_dds.register()
+        set_properties.register()
 
     def unregister():
         """Remove addon."""
+        preferences.unregister()
         import_dds.unregister()
         export_dds.unregister()
+        set_properties.unregister()
 
 except ModuleNotFoundError as exc:
     print(exc)
-    print('bpy not found.')
+    print('Failed to load the addon.')

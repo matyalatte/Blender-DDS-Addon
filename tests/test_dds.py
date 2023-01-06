@@ -2,8 +2,13 @@
 import os
 import pytest
 
-from blender_dds_addon import import_dds
-from blender_dds_addon import export_dds
+from blender_dds_addon.ui import import_dds
+from blender_dds_addon.ui import export_dds
+from blender_dds_addon.ui import set_properties
+
+import bpy
+bpy.utils.register_class(set_properties.DDSProperties)
+set_properties.add_custom_props_for_dds()
 
 
 def get_test_dds():

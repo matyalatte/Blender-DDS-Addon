@@ -12,30 +12,10 @@ from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 import numpy as np
 
-from .texconv import Texconv
-from .dds import DDSHeader
-from .export_dds import get_image_editor_space
-from . import util
-
-
-def load_texture(file, name, color_space='Non-Color'):
-    """Load a texture file.
-
-    Args:
-        file (string): file path for dds
-        name (string): object name for the texture
-        color_space (string): color space
-
-    Returns:
-        tex (bpy.types.Image): loaded texture
-    """
-    tex = bpy.data.images.load(file)
-    tex.colorspace_settings.name = color_space
-    tex.name = name
-    tex.pack()
-    tex.filepath = os.path.join('//textures', tex.name + '.' + util.get_ext(file))
-    tex.filepath_raw = tex.filepath
-    return tex
+from ..directx.dds import DDSHeader
+from ..directx.texconv import Texconv
+from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist
+from .export_dds import DDS_FMT_NAMES
 
 
 def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None):
@@ -63,7 +43,7 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
             if temp_tga is None:  # if texconv doesn't exist
                 raise RuntimeError('Failed to convert texture.')
 
-            # Check color space
+            # Check dxgi_format
             dds_header = DDSHeader.read_from_file(temp)
             if dds_header.is_srgb():
                 color_space = 'sRGB'
@@ -71,6 +51,16 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
                 color_space = 'Non-Color'
 
             tex = load_texture(temp_tga, name=os.path.basename(temp_tga)[:-4], color_space=color_space)
+
+            dxgi = dds_header.get_format_as_str()
+            if dds_properties_exist():
+                props = tex.dds_props
+                if dxgi in DDS_FMT_NAMES:
+                    props.dxgi_format = dds_header.get_format_as_str()
+                props.no_mip = dds_header.mipmap_num <= 1
+                props.is_cube = dds_header.is_cube()
+                if props.is_cube:
+                    props.cubemap_layout = cubemap_layout
 
     except Exception as e:
         if tex is not None:

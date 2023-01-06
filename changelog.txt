@@ -1,3 +1,8 @@
+ver 0.2.0
+- Added "Export All Images" operation
+- Added custom properties to store meta data
+- Refined codes
+
 ver 0.1.3
 - Supported dds files that have no fourCC
 - Supported UINT and SINT formats

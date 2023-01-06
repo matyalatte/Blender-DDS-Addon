@@ -26,12 +26,17 @@ class Texconv:
                 dll_name = "libtexconv.so"
             else:
                 raise RuntimeError(f'This OS ({util.get_os_name()}) is unsupported.')
-            dll_path = os.path.join(os.path.dirname(file_path), dll_name)
+            dirname = os.path.dirname(file_path)
+            dll_path = os.path.join(dirname, dll_name)
+            dll_path2 = os.path.join(os.path.dirname(dirname), dll_name)  # allow ../texconv.dll
 
         dll_path = os.path.abspath(dll_path)
 
         if not os.path.exists(dll_path):
-            raise RuntimeError(f'texconv not found. ({dll_path})')
+            if os.path.exists(dll_path2):
+                dll_path = dll_path2
+            else:
+                raise RuntimeError(f'texconv not found. ({dll_path})')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
 
@@ -65,7 +70,7 @@ class Texconv:
             raise RuntimeError('Can not convert 3D textures with texconv.')
 
         if verbose:
-            print(f'DXGI_FORMAT: {dds_header.get_format_as_str()[12:]}')
+            print(f'DXGI_FORMAT: {dds_header.get_format_as_str()}')
 
         args = []
 

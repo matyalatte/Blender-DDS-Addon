@@ -26,6 +26,7 @@ htmlcov
 *.so
 *.dylib
 *.exe
+*.zip
 
 # doc
 *.txt

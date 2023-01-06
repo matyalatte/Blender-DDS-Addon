@@ -16,35 +16,10 @@ from bpy.types import Operator, PropertyGroup
 from bpy_extras.io_utils import ExportHelper
 import numpy as np
 
-from .dds import is_hdr
-from .dxgi_format import DXGI_FORMAT
-from .texconv import Texconv
-
-
-def save_texture(tex, file, fmt):
-    """Save a texture.
-
-    Args:
-        tex (bpy.types.Image): an image object
-        file (string): file path
-        fmt (string): file format
-    """
-    file_format = tex.file_format
-    filepath_raw = tex.filepath_raw
-
-    try:
-        tex.file_format = fmt
-        tex.filepath_raw = file
-        tex.save()
-
-        tex.file_format = file_format
-        tex.filepath_raw = filepath_raw
-
-    except Exception as e:
-        tex.file_format = file_format
-        tex.filepath_raw = filepath_raw
-        raise e
-
+from ..directx.dds import is_hdr
+from ..directx.dxgi_format import DXGI_FORMAT
+from ..directx.texconv import Texconv
+from .bpy_util import get_image_editor_space, save_texture, dds_properties_exist
 
 def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
              allow_slow_codec=False,
@@ -183,13 +158,17 @@ def is_supported(fmt):
            (len(fmt) > 4) and (fmt not in ["UNKNOWN", "420_OPAQUE"])
 
 
+DDS_FMT_ITEMS = [(fmt, get_alt_fmt(fmt), '') for fmt in fmt_list if is_supported(fmt)]
+DDS_FMT_NAMES = [fmt for fmt in fmt_list if is_supported(fmt)]
+
+
 class DDSOptions(PropertyGroup):
     """Properties for general options."""
 
-    dds_format: EnumProperty(
+    dxgi_format: EnumProperty(
         name='DDS format',
-        items=[(fmt, get_alt_fmt(fmt), '') for fmt in fmt_list if is_supported(fmt)],
-        description='DXGI format for DDS',
+        items=DDS_FMT_ITEMS,
+        description="DXGI format for DDS",
         default='BC1_UNORM'
     )
 
@@ -237,29 +216,52 @@ class DDSOptions(PropertyGroup):
         default='h-cross'
     )
 
+def export_as_dds(context, tex, file):
+    dds_options = context.scene.dds_options
 
-def get_image_editor_space(context):
-    area = context.area
-    if area.type == 'IMAGE_EDITOR':
-        space = area.spaces.active
+    if dds_properties_exist():
+        props = tex.dds_props
+        dxgi = props.dxgi_format
+        is_cube = props.is_cube
+        cubemap_layout = props.cubemap_layout
+        no_mip = props.no_mip
     else:
-        raise RuntimeError('Failed to get Image Editor. This is unexpected.')
-    return space
+        dxgi = dds_options.dxgi_format
+        is_cube = dds_options.export_as_cubemap
+        cubemap_layout = dds_options.cubemap_layout
+        no_mip = dds_options.no_mip
+
+    if dxgi == "NONE":
+        raise RuntimeError("Select DXGI format.")
+
+    save_dds(tex, file, dxgi,
+                invert_normals=dds_options.invert_normals, no_mip=no_mip,
+                allow_slow_codec=dds_options.allow_slow_codec,
+                export_as_cubemap=is_cube,
+                cubemap_layout=cubemap_layout)
+
+
+def put_export_options(context, layout):
+    dds_options = context.scene.dds_options
+    if not dds_properties_exist():
+        layout.prop(dds_options, 'dxgi_format')
+    layout.prop(dds_options, 'invert_normals')
+    if not dds_properties_exist():
+        layout.prop(dds_options, 'no_mip')
+        layout.prop(dds_options, 'export_as_cubemap')
+        if dds_options.export_as_cubemap:
+            layout.prop(dds_options, 'cubemap_layout')
+    layout.prop(dds_options, 'allow_slow_codec')
 
 
 class DDS_OT_export_dds(Operator, ExportHelper):
-    """Operator to export .dds files."""
+    """Operator to export selected image as a .dds file."""
     bl_idname = 'dds.export_dds'
-    bl_label = 'Export as DDS'
-    bl_description = 'Export .dds files'
+    bl_label = 'Export Selected Image'
+    bl_description = 'Export selected image as a .dds file'
     bl_options = {'REGISTER', 'UNDO'}
 
     filter_glob: StringProperty(default='*.dds; *.DDS', options={'HIDDEN'})
-
-    files: CollectionProperty(
-        name='File Path',
-        type=bpy.types.OperatorFileListElement,
-    )
 
     filename_ext = '.dds'
 
@@ -272,24 +274,12 @@ class DDS_OT_export_dds(Operator, ExportHelper):
         layout = self.layout
         layout.use_property_split = False
         layout.use_property_decorate = False  # No animation.
-        dds_options = context.scene.dds_options
-        layout.prop(dds_options, 'dds_format')
-        layout.prop(dds_options, 'invert_normals')
-        layout.prop(dds_options, 'no_mip')
-        layout.prop(dds_options, 'allow_slow_codec')
-        layout.prop(dds_options, 'export_as_cubemap')
-        layout.prop(dds_options, 'cubemap_layout')
+        put_export_options(context, layout)
 
     def invoke(self, context, event):
-        """Invoke."""
         return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
-        """Run the operator."""
-        return self.export_dds(context)
-
-    def export_dds(self, context):
-        """Export a file."""
         file = self.filepath
         try:
             start_time = time.time()
@@ -298,15 +288,66 @@ class DDS_OT_export_dds(Operator, ExportHelper):
             tex = space.image
             if tex is None:
                 raise RuntimeError('Select an image on Image Editor.')
-            dds_options = context.scene.dds_options
-            save_dds(tex, file, dds_options.dds_format,
-                     invert_normals=dds_options.invert_normals, no_mip=dds_options.no_mip,
-                     allow_slow_codec=dds_options.allow_slow_codec,
-                     export_as_cubemap=dds_options.export_as_cubemap,
-                     cubemap_layout=dds_options.cubemap_layout)
+            
+            export_as_dds(context, tex, file)
 
             elapsed_s = f'{(time.time() - start_time):.2f}s'
-            m = f'Success! Exported DDS in {elapsed_s}'
+            m = f'Success! Exported {file} in {elapsed_s}'
+            print(m)
+            self.report({'INFO'}, m)
+            ret = {'FINISHED'}
+
+        except Exception as e:
+            print(traceback.format_exc())
+            self.report({'ERROR'}, e.args[0])
+            ret = {'CANCELLED'}
+        return ret
+
+
+class DDS_OT_export_all(Operator):
+    """Operator to export all images as .dds files."""
+    bl_idname = 'dds.export_all'
+    bl_label = 'Export All Images'
+    bl_description = 'Export all images that have DXGI format'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    directory: StringProperty(
+        name="target_dir",
+        default=''
+    )
+
+    def draw(self, context):
+        """Draw options for file picker."""
+        layout = self.layout
+        layout.use_property_split = False
+        layout.use_property_decorate = False  # No animation.
+        put_export_options(context, layout)
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        try:
+            start_time = time.time()
+
+            count = 0
+            for tex in bpy.data.images:
+                if dds_properties_exist() and tex.dds_props.dxgi_format == "NONE":
+                    continue
+                name = tex.name
+                if name[-4:] != ".dds":
+                    name += ".dds"
+                export_as_dds(context, tex, os.path.join(self.directory, name))
+                count += 1
+
+            elapsed_s = f'{(time.time() - start_time):.2f}s'
+            if count == 0:
+                raise RuntimeError("There is no images that have DXGI format.")
+            elif count == 1:
+                m = f'Success! Exported an image in {elapsed_s}'
+            else:
+                m = f'Success! Exported {count} images in {elapsed_s}'
             print(m)
             self.report({'INFO'}, m)
             ret = {'FINISHED'}
@@ -330,18 +371,13 @@ class DDS_PT_export_panel(bpy.types.Panel):
         """Draw UI panel."""
         layout = self.layout
         layout.operator(DDS_OT_export_dds.bl_idname, icon='TEXTURE_DATA')
-        dds_options = context.scene.dds_options
-        layout.prop(dds_options, 'dds_format')
-        layout.prop(dds_options, 'invert_normals')
-        layout.prop(dds_options, 'no_mip')
-        layout.prop(dds_options, 'allow_slow_codec')
-        layout.prop(dds_options, 'export_as_cubemap')
-        layout.prop(dds_options, 'cubemap_layout')
-
+        layout.operator(DDS_OT_export_all.bl_idname, icon='TEXTURE_DATA')
+        put_export_options(context, layout)
 
 classes = (
     DDSOptions,
     DDS_OT_export_dds,
+    DDS_OT_export_all,
     DDS_PT_export_panel,
 )
 

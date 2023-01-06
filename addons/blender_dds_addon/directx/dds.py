@@ -1,13 +1,13 @@
 """Class for DDS files."""
 
 import ctypes as c
-from enum import Enum
+from enum import IntEnum
 
 from . import util
 from .dxgi_format import DXGI_FORMAT, FOURCC_TO_DXGI, BITMASK_TO_DXGI
 
 
-class PF_FLAGS(Enum):
+class PF_FLAGS(IntEnum):
     '''dwFlags for DDS_PIXELFORMAT'''
     # DDS_ALPHAPIXELS = 0x00000001
     # DDS_ALPHA = 0x00000002
@@ -164,7 +164,7 @@ class DDSHeader(c.LittleEndianStructure):
         f.write(self)
         # DXT10 header
         if self.fourCC == b'DX10':
-            util.write_uint32(f, self.dxgi_format.value)
+            util.write_uint32(f, self.dxgi_format)
             util.write_uint32(f, 3)
             util.write_uint32(f, 4 * self.is_cube())
             util.write_uint32(f, 1)
@@ -179,7 +179,7 @@ class DDSHeader(c.LittleEndianStructure):
     def get_dxgi_from_header(self):
         '''Similar method as GetDXGIFormat in DirectXTex/DDSTextureLoader/DDSTextureLoader12.cpp'''
         # Try to detect DXGI from fourCC.
-        if self.pfflags & PF_FLAGS.DDS_FOURCC.value:
+        if self.pfflags & PF_FLAGS.DDS_FOURCC:
             for cc_list, dxgi in FOURCC_TO_DXGI:
                 if self.fourCC in cc_list:
                     return dxgi
@@ -194,7 +194,7 @@ class DDSHeader(c.LittleEndianStructure):
             print("Failed to detect dxgi format. It'll be loaded as B8G8R8A8.")
             return DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM
 
-        if self.pfflags & PF_FLAGS.DDS_BUMPDUDV.value:
+        if self.pfflags & PF_FLAGS.DDS_BUMPDUDV:
             # DXGI format should be signed.
             return DXGI_FORMAT.get_signed(detected_dxgi)
         else:
@@ -213,7 +213,7 @@ class DDSHeader(c.LittleEndianStructure):
         return 'BC5' in self.dxgi_format.name
 
     def get_format_as_str(self):
-        return self.dxgi_format.name
+        return self.dxgi_format.name[12:]
 
     def is_srgb(self):
         return 'SRGB' in self.dxgi_format.name

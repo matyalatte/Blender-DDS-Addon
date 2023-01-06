@@ -52,7 +52,7 @@ Then, type `bash build_dds_full_support.sh`.
 
 ## 4. Copy Texconv
 
-Copy the built binary (`texconv.dll`, `libtexconv.dylib` or `libtexconv.so`) to `./Blender-DDS-Addon/addons/blender_dds_addon`.  
+Copy the built binary (`texconv.dll`, `libtexconv.dylib` or `libtexconv.so`) to `./Blender-DDS-Addon/addons/blender_dds_addon/directx`.  
 
 ## 5. Archive Files
 

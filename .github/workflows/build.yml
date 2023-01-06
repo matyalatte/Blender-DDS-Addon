@@ -76,7 +76,7 @@ jobs:
           cp -r addons/${{ env.ZIP_NAME }} ../release
           cp changelog.txt ../release/${{ env.ZIP_NAME }}
           cp LICENSE ../release/${{ env.ZIP_NAME }}
-          cp external/Texconv-Custom-DLL/*texconv.* ../release/${{ env.ZIP_NAME }}
+          cp external/Texconv-Custom-DLL/*texconv.* ../release/${{ env.ZIP_NAME }}/directx
         shell: bash
       
       - name: Archive Release

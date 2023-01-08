@@ -11,7 +11,7 @@ def mkdir(directory):
 
 def get_ext(file):
     """Get file extension."""
-    return file.split('.')[-1]
+    return file.split('.')[-1].lower()
 
 
 def check(actual, expected, f=None, msg='Parse failed. This is unexpected error.'):

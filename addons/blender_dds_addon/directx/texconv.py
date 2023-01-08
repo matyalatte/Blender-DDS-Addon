@@ -16,6 +16,9 @@ from . import util
 class Texconv:
     """Texture converter."""
     def __init__(self, dll_path=None):
+        self.load_dll(dll_path=dll_path)
+
+    def load_dll(self, dll_path=None):
         if dll_path is None:
             file_path = os.path.realpath(__file__)
             if util.is_windows():
@@ -96,7 +99,8 @@ class Texconv:
                     args += ['-inverty']
 
         if dds_header.is_cube():
-            name = ".".join(file.split(".")[:-1] + [fmt])
+            name = os.path.join(out, os.path.basename(file))
+            name = ".".join(name.split(".")[:-1] + [fmt])
             self.cube_to_image(file, name, args, cubemap_layout=cubemap_layout, verbose=verbose)
         else:
             out = self.texconv(file, args, out=out, verbose=verbose)
@@ -111,7 +115,7 @@ class Texconv:
                        verbose=True, allow_slow_codec=False):
         """Convert texture to dds."""
 
-        ext = util.get_ext(file).lower()
+        ext = util.get_ext(file)
 
         if is_hdr(dds_fmt) and ext != 'hdr':
             raise RuntimeError(f'Use .hdr for HDR textures. ({file})')

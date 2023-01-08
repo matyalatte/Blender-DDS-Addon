@@ -21,6 +21,14 @@ def get_image_editor_space(context):
     return space
 
 
+def get_selected_tex(context):
+    space = get_image_editor_space(context)
+    tex = space.image
+    if tex is None:
+        raise RuntimeError('Select an image on Image Editor.')
+    return tex
+
+
 def load_texture(file, name, color_space='Non-Color'):
     """Load a texture file.
 

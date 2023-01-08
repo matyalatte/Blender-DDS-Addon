@@ -1,4 +1,5 @@
 ver 0.2.0
+- Added "Import from a Directory" operation
 - Added "Export All Images" operation
 - Added custom properties to store meta data
 - Refined codes

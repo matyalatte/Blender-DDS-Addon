@@ -15,7 +15,7 @@ import numpy as np
 from ..directx.dds import DDSHeader
 from ..directx.texconv import Texconv
 from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist
-from .export_dds import DDS_FMT_NAMES
+from .custom_properties import DDS_FMT_NAMES
 
 
 def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None):
@@ -80,19 +80,26 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
     return tex
 
 
-class DDS_OT_import_dds(Operator, ImportHelper):
-    """Operator to import .dds files."""
-    bl_idname = 'dds.import_dds'
-    bl_label = 'Import DDS'
-    bl_description = 'Import .dds files'
-    bl_options = {'REGISTER', 'UNDO'}
+def import_dds(context, file):
+    """Import a file."""
+    space = get_image_editor_space(context)
+    dds_options = context.scene.dds_options
+    tex = load_dds(file, invert_normals=dds_options.invert_normals,
+                   cubemap_layout=dds_options.cubemap_layout)
+    space.image = tex
 
-    filter_glob: StringProperty(default='*.dds; *.DDS', options={'HIDDEN'})
 
-    filepath: StringProperty(subtype='FILE_PATH')
-    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={'HIDDEN', 'SKIP_SAVE'})
-    directory: bpy.props.StringProperty(subtype='FILE_PATH', options={'HIDDEN', 'SKIP_SAVE'})
+def import_dds_rec(context, folder, count=0):
+    for file in sorted(os.listdir(folder)):
+        if os.path.isdir(file):
+            count += import_dds_rec(context, os.path.join(folder, file), count=count)
+        elif file.split('.')[-1].lower() == "dds":
+            import_dds(context, os.path.join(folder, file))
+            count += 1
+    return count
 
+
+class DDS_OT_import_base(Operator):
     def draw(self, context):
         """Draw options for file picker."""
         layout = self.layout
@@ -102,31 +109,26 @@ class DDS_OT_import_dds(Operator, ImportHelper):
         layout.prop(dds_options, 'invert_normals')
         layout.prop(dds_options, 'cubemap_layout')
 
-    def invoke(self, context, event):
-        """Invoke."""
-        return ImportHelper.invoke(self, context, event)
-
-    def execute(self, context):
-        """Run the operator."""
-        if not self.directory:
+    def execute_base(self, context, files=None, directory=None, is_dir=False):
+        if directory is None:
             raise RuntimeError('"self.directory" is not specified. This is unexpected.')
-        for _, file in enumerate(self.files):
-            ret = self.import_dds(context, os.path.join(self.directory, file.name))
-            if ret != {'FINISHED'}:
-                return ret
-        return ret
 
-    def import_dds(self, context, file):
-        """Import a file."""
         try:
             start_time = time.time()
-            space = get_image_editor_space(context)
-            dds_options = context.scene.dds_options
-            tex = load_dds(file, invert_normals=dds_options.invert_normals,
-                           cubemap_layout=dds_options.cubemap_layout)
-            space.image = tex
+            if is_dir:
+                count = import_dds_rec(context, directory)
+            else:
+                count = 0
+                for _, file in enumerate(files):
+                    import_dds(context, os.path.join(directory, file.name))
+                    count += 1
             elapsed_s = f'{(time.time() - start_time):.2f}s'
-            m = f'Success! Imported DDS in {elapsed_s}'
+            if count == 0:
+                raise RuntimeError("Imported no DDS files.")
+            elif count == 1:
+                m = f'Success! Imported a DDS file in {elapsed_s}'
+            else:
+                m = f'Success! Imported {count} DDS files in {elapsed_s}'
             print(m)
             self.report({'INFO'}, m)
             ret = {'FINISHED'}
@@ -135,7 +137,49 @@ class DDS_OT_import_dds(Operator, ImportHelper):
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
+
         return ret
+
+
+class DDS_OT_import_dds(DDS_OT_import_base, ImportHelper):
+    """Operator to import .dds files."""
+    bl_idname = 'dds.import_dds'
+    bl_label = 'Import Files'
+    bl_description = 'Import selected .dds files'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    filter_glob: StringProperty(default='*.dds; *.DDS', options={'HIDDEN'})
+
+    filepath: StringProperty(subtype='FILE_PATH')
+    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={'HIDDEN', 'SKIP_SAVE'})
+    directory: bpy.props.StringProperty(subtype='FILE_PATH', options={'HIDDEN', 'SKIP_SAVE'})
+
+    def invoke(self, context, event):
+        """Invoke."""
+        return ImportHelper.invoke(self, context, event)
+
+    def execute(self, context):
+        return self.execute_base(context, files=self.files, directory=self.directory)
+
+
+class DDS_OT_import_dir(DDS_OT_import_base):
+    """Operator to import DDS files from a directory."""
+    bl_idname = 'dds.import_dir'
+    bl_label = 'Import from a Directory'
+    bl_description = 'Search a directory recursively and import found DDS files'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    directory: StringProperty(
+        name="target_dir",
+        default=''
+    )
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        return self.execute_base(context, directory=self.directory, is_dir=True)
 
 
 class DDS_PT_import_panel(bpy.types.Panel):
@@ -150,6 +194,7 @@ class DDS_PT_import_panel(bpy.types.Panel):
         """Draw UI panel."""
         layout = self.layout
         layout.operator(DDS_OT_import_dds.bl_idname, icon='TEXTURE_DATA')
+        layout.operator(DDS_OT_import_dir.bl_idname, icon='TEXTURE_DATA')
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
         layout.prop(dds_options, 'cubemap_layout')
@@ -157,6 +202,7 @@ class DDS_PT_import_panel(bpy.types.Panel):
 
 classes = (
     DDS_OT_import_dds,
+    DDS_OT_import_dir,
     DDS_PT_import_panel,
 )
 

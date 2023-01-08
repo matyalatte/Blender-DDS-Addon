@@ -32,21 +32,21 @@ try:
     if ".import_dds" in locals():
         reload_package(locals())
 
-    from .ui import import_dds, export_dds, set_properties, preferences
+    from .ui import import_dds, export_dds, custom_properties, preferences
 
     def register():
         """Add addon."""
         preferences.register()
         import_dds.register()
         export_dds.register()
-        set_properties.register()
+        custom_properties.register()
 
     def unregister():
         """Remove addon."""
         preferences.unregister()
         import_dds.unregister()
         export_dds.unregister()
-        set_properties.unregister()
+        custom_properties.unregister()
 
 except ModuleNotFoundError as exc:
     print(exc)

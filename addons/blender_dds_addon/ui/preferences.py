@@ -3,7 +3,7 @@ from bpy.types import AddonPreferences
 from bpy.props import BoolProperty
 
 from .bpy_util import get_addon_preferences
-from .set_properties import add_custom_props_for_dds, remove_custom_props_for_dds
+from .custom_properties import add_custom_props_for_dds, remove_custom_props_for_dds
 
 
 def update_custom_props(self, context):

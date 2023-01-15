@@ -14,7 +14,7 @@ import numpy as np
 
 from ..directx.dds import is_hdr
 from ..directx.texconv import Texconv
-from .bpy_util import save_texture, dds_properties_exist, get_selected_tex
+from .bpy_util import save_texture, dds_properties_exist, get_selected_tex, flush_stdout
 
 
 def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
@@ -135,12 +135,14 @@ def export_as_dds(context, tex, file):
     dds_options = context.scene.dds_options
 
     if dds_properties_exist():
+        # Use image's properties
         props = tex.dds_props
         dxgi = props.dxgi_format
         is_cube = props.is_cube
         cubemap_layout = props.cubemap_layout
         no_mip = props.no_mip
     else:
+        # Use scene's properties
         dxgi = dds_options.dxgi_format
         is_cube = dds_options.export_as_cubemap
         cubemap_layout = dds_options.cubemap_layout
@@ -170,11 +172,13 @@ def put_export_options(context, layout):
 
 
 class DDS_OT_export_base(Operator):
+    """Base class for export operators."""
+
     def draw(self, context):
         """Draw options for file picker."""
         layout = self.layout
         layout.use_property_split = False
-        layout.use_property_decorate = False  # No animation.
+        layout.use_property_decorate = False
         put_export_options(context, layout)
 
     def execute_base(self, context, file=None, directory=None, is_dir=False):
@@ -182,6 +186,7 @@ class DDS_OT_export_base(Operator):
             start_time = time.time()
 
             if is_dir:
+                # For DDS_OT_export_all
                 count = 0
                 for tex in bpy.data.images:
                     if dds_properties_exist() and tex.dds_props.dxgi_format == "NONE":
@@ -191,8 +196,10 @@ class DDS_OT_export_base(Operator):
                         name += ".dds"
                     file = os.path.join(directory, name)
                     export_as_dds(context, tex, file)
+                    flush_stdout()
                     count += 1
             else:
+                # For DDS_OT_export_dds
                 tex = get_selected_tex(context)
                 export_as_dds(context, tex, file)
                 count = 1

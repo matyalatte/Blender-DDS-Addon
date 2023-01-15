@@ -14,7 +14,7 @@ import numpy as np
 
 from ..directx.dds import DDSHeader
 from ..directx.texconv import Texconv
-from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist
+from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist, flush_stdout
 from .custom_properties import DDS_FMT_NAMES
 
 
@@ -35,12 +35,13 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
         with tempfile.TemporaryDirectory() as temp_dir:
             temp = os.path.join(temp_dir, os.path.basename(file))
             shutil.copyfile(file, temp)
+
+            # Convert dds to tga
             if texconv is None:
                 texconv = Texconv()
-
             temp_tga = texconv.convert_to_tga(temp, out=temp_dir, cubemap_layout=cubemap_layout,
                                               invert_normals=invert_normals)
-            if temp_tga is None:  # if texconv doesn't exist
+            if temp_tga is None:
                 raise RuntimeError('Failed to convert texture.')
 
             # Check dxgi_format
@@ -50,33 +51,38 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
             else:
                 color_space = 'Non-Color'
 
+            # Load tga file
             tex = load_texture(temp_tga, name=os.path.basename(temp_tga)[:-4], color_space=color_space)
 
-            dxgi = dds_header.get_format_as_str()
             if dds_properties_exist():
+                # Update custom properties
                 props = tex.dds_props
+                dxgi = dds_header.get_format_as_str()
                 if dxgi in DDS_FMT_NAMES:
-                    props.dxgi_format = dds_header.get_format_as_str()
+                    props.dxgi_format = dxgi
                 props.no_mip = dds_header.mipmap_num <= 1
                 props.is_cube = dds_header.is_cube()
                 if props.is_cube:
                     props.cubemap_layout = cubemap_layout
+
+        if cubemap_layout.endswith("-fnz"):
+            # Flip -z face for cubemaps
+            w, h = tex.size
+            pix = np.array(tex.pixels).reshape((h, w, -1))
+            if cubemap_layout[0] == "v":
+                pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2] = (pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2])[::-1, ::-1]
+            else:
+                pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4] = (pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4])[::-1, ::-1]
+            pix = pix.flatten()
+            tex.pixels = list(pix)
+
+        tex.update()
 
     except Exception as e:
         if tex is not None:
             bpy.data.images.remove(tex)
         raise e
 
-    if cubemap_layout.endswith("-fnz"):
-        w, h = tex.size
-        pix = np.array(tex.pixels).reshape((h, w, -1))
-        if cubemap_layout[0] == "v":
-            pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2] = (pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2])[::-1, ::-1]
-        else:
-            pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4] = (pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4])[::-1, ::-1]
-        pix = pix.flatten()
-        tex.pixels = list(pix)
-    tex.update()
     return tex
 
 
@@ -90,6 +96,7 @@ def import_dds(context, file):
 
 
 def import_dds_rec(context, folder, count=0):
+    """Search a folder recursively, and import found dds files."""
     for file in sorted(os.listdir(folder)):
         if os.path.isdir(file):
             count += import_dds_rec(context, os.path.join(folder, file), count=count)
@@ -100,11 +107,13 @@ def import_dds_rec(context, folder, count=0):
 
 
 class DDS_OT_import_base(Operator):
+    """Base class for imoprt operators."""
+
     def draw(self, context):
         """Draw options for file picker."""
         layout = self.layout
         layout.use_property_split = False
-        layout.use_property_decorate = False  # No animation.
+        layout.use_property_decorate = False
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
         layout.prop(dds_options, 'cubemap_layout')
@@ -116,11 +125,14 @@ class DDS_OT_import_base(Operator):
         try:
             start_time = time.time()
             if is_dir:
+                # For DDS_OT_import_dir
                 count = import_dds_rec(context, directory)
             else:
+                # For DDS_OT_import_dds
                 count = 0
                 for _, file in enumerate(files):
                     import_dds(context, os.path.join(directory, file.name))
+                    flush_stdout()
                     count += 1
             elapsed_s = f'{(time.time() - start_time):.2f}s'
             if count == 0:

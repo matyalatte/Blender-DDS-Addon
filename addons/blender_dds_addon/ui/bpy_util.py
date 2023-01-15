@@ -2,6 +2,10 @@ import os
 import bpy
 
 
+def flush_stdout():
+    print("", end="", flush=True)
+
+
 def dds_properties_exist():
     return hasattr(bpy.types.Image, "dds_props")
 

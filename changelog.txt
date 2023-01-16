@@ -2,6 +2,7 @@ ver 0.2.0
 - Added "Import from a Directory" operation
 - Added "Export All Images" operation
 - Added custom properties to store meta data
+- Updated texconv to fix a bug that cubemap images will be written on non-zeroed buffers
 - Refined codes
 
 ver 0.1.3

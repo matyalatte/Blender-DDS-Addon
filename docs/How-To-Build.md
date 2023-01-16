@@ -41,13 +41,13 @@ It'll download the file and place it in a proper location.
 ### for Windows
 
 Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL/batch_files`.  
-Then, type `build_dds_full_support.bat`.  
+Then, type `build_small.bat`.  
 `texconv.dll` will be generated in `./Blender-DDS-Addon/external/Texconv-Custom-DLL/`  
 
 ### for Unix
 
 Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL/shell_scripts`.  
-Then, type `bash build_dds_full_support.sh`.  
+Then, type `bash build_small.sh`.  
 `libtexconv.so` (or `libtexconv.dylib`) will be generated in `./Blender-DDS-Addon/external/Texconv-Custom-DLL/`  
 
 ## 4. Copy Texconv

@@ -34,36 +34,29 @@ jobs:
     # https://github.com/mondeja/pytest-blender/blob/master/.github/workflows/ci.yml
     name: Test
     runs-on: ${{ matrix.platform }}
+    env:
+      pytest-version: '7.1.2'
+      python-version: '3.10'
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Test with 2.83, 3.0, and 3.2 on Windows
+          # Test with 2.83, 3.0, and 3.3 on Windows
           - platform: windows-latest
-            pytest-version: '7.1.2'
-            blender-version: '3.2.2'
-            python-version: '3.10'
+            blender-version: '3.3.3'
           
           - platform: windows-latest
-            pytest-version: '7.1.2'
             blender-version: '3.0.1'
-            python-version: '3.10'
           
           - platform: windows-latest
-            pytest-version: '7.1.2'
             blender-version: '2.83.20'
-            python-version: '3.10'
           
-          # Test with 3.2 on Unix systems
+          # Test with 3.3 on Unix systems
           - platform: ubuntu-latest
-            pytest-version: '7.1.2'
-            blender-version: '3.2.2'
-            python-version: '3.10'
+            blender-version: '3.3.3'
           
           - platform: macos-latest
-            pytest-version: '7.1.2'
-            blender-version: '3.2.2'
-            python-version: '3.10'
+            blender-version: '3.3.3'
 
     steps:
       - uses: actions/checkout@v3
@@ -86,10 +79,10 @@ jobs:
           bash external/Texconv-Custom-DLL/shell_scripts/build_small.sh
           cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon/directx
       
-      - name: Set up Python v${{ matrix.python-version }}
+      - name: Set up Python v${{ env.python-version }}
         uses: actions/setup-python@v3
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.python-version }}
 
       - name: Upgrade PIP
         run: python -m pip install --upgrade pip
@@ -131,13 +124,13 @@ jobs:
         if: runner.os == 'Windows'
         id: install-dependencies-windows
         run: |
-          python -m pip install pytest-blender pytest==${{ matrix.pytest-version }}
+          python -m pip install pytest-blender pytest==${{ env.pytest-version }}
           $BLENDER_EXECUTABLE = get-content _blender-executable-path.txt
           echo "BLENDER_EXECUTABLE: $BLENDER_EXECUTABLE"
           pytest-blender --blender-executable $(Get-Variable -Name BLENDER_EXECUTABLE -ValueOnly)
           $PYTHON_BLENDER_EXECUTABLE = pytest-blender --blender-executable "$(Get-Variable -Name BLENDER_EXECUTABLE -ValueOnly)"
           echo "PYTHON_BLENDER_EXECUTABLE: $PYTHON_BLENDER_EXECUTABLE"
-          Invoke-Expression "$PYTHON_BLENDER_EXECUTABLE -m pip install pytest==${{ matrix.pytest-version }}"
+          Invoke-Expression "$PYTHON_BLENDER_EXECUTABLE -m pip install pytest==${{ env.pytest-version }}"
           echo "::set-output name=blender-executable::$BLENDER_EXECUTABLE"
 
       # Install dependencies on Unix-based systems
@@ -146,14 +139,14 @@ jobs:
         id: install-dependencies-unix
         run: |
           set -x
-          python -m pip install pytest-blender pytest==${{ matrix.pytest-version }}
+          python -m pip install pytest-blender pytest==${{ env.pytest-version }}
           BLENDER_EXECUTABLE="$(< _blender-executable-path.txt)"
           echo "BLENDER_EXECUTABLE: $BLENDER_EXECUTABLE"
           pytest-blender --blender-executable "$BLENDER_EXECUTABLE"
           PYTHON_BLENDER_EXECUTABLE="$(pytest-blender --blender-executable $BLENDER_EXECUTABLE)"
           echo "PYTHON_BLENDER_EXECUTABLE: $PYTHON_BLENDER_EXECUTABLE"
           $PYTHON_BLENDER_EXECUTABLE -m ensurepip
-          $PYTHON_BLENDER_EXECUTABLE -m pip install pytest==${{ matrix.pytest-version }}
+          $PYTHON_BLENDER_EXECUTABLE -m pip install pytest==${{ env.pytest-version }}
           echo "::set-output name=blender-executable::$BLENDER_EXECUTABLE"
 
       - name: Tests for Windows
@@ -164,6 +157,6 @@ jobs:
 
       - name: Tests for Unix
         if: runner.os != 'Windows'
-        run: pytest tests -svv
+        run: pytest -svv tests -- -noaudio
         env:
           BLENDER_EXECUTABLE: ${{ steps.install-dependencies-unix.outputs.blender-executable }}

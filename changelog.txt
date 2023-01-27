@@ -1,5 +1,6 @@
 ver 0.2.1
 - Added a function to unload dll. (No need to restart Blender to uninstall the addon.)
+- Added "Image Filter" option. (Possible to use cubic filter for mip generation.)
 
 ver 0.2.0
 - Added "Import from a Directory" operation

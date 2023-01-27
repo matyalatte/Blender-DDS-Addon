@@ -140,6 +140,7 @@ class Texconv:
 
     def convert_to_dds(self, file, dds_fmt, out=None,
                        invert_normals=False, no_mip=False,
+                       image_filter="LINEAR",
                        export_as_cubemap=False,
                        cubemap_layout="h-cross",
                        verbose=True, allow_slow_codec=False):
@@ -166,6 +167,8 @@ class Texconv:
         args = ['-f', dds_fmt]
         if no_mip:
             args += ['-m', '1']
+        if image_filter != "LINEAR":
+            args += ["-if", image_filter]
 
         if ("BC5" in dds_fmt) and invert_normals:
             args += ['-inverty']

@@ -25,7 +25,7 @@ def test_unload_dll():
     unload_texconv()
 
 
-@pytest.mark.parametrize('export_format', ["BC4_UNORM", "B8G8R8A8_UNORM_SRGB", "R16G16B16A16_FLOAT"])
+@pytest.mark.parametrize("export_format", ["BC4_UNORM", "B8G8R8A8_UNORM_SRGB", "R16G16B16A16_FLOAT"])
 def test_io(export_format):
     """Cehck if the addon can import and export dds."""
     tex = import_dds.load_dds(get_test_dds())
@@ -52,4 +52,12 @@ def test_io_cubemap():
     """Test with cubemap."""
     tex = import_dds.load_dds(os.path.join("tests", "cube.dds"))
     tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", export_as_cubemap=True)
+    os.remove("saved.dds")
+
+
+@pytest.mark.parametrize("image_filter", ["POINT", "CUBIC"])
+def test_io_filter(image_filter):
+    """Test filter options."""
+    tex = import_dds.load_dds(get_test_dds())
+    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", image_filter=image_filter)
     os.remove("saved.dds")

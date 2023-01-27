@@ -18,6 +18,7 @@ from .bpy_util import save_texture, dds_properties_exist, get_selected_tex, flus
 
 
 def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
+             image_filter='LINEAR',
              allow_slow_codec=False,
              export_as_cubemap=False,
              cubemap_layout='h-cross',
@@ -102,6 +103,7 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
 
         temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
                                           invert_normals=invert_normals, no_mip=no_mip,
+                                          image_filter=image_filter,
                                           export_as_cubemap=export_as_cubemap,
                                           cubemap_layout=cubemap_layout,
                                           allow_slow_codec=allow_slow_codec, verbose=verbose)
@@ -153,6 +155,7 @@ def export_as_dds(context, tex, file):
 
     save_dds(tex, file, dxgi,
              invert_normals=dds_options.invert_normals, no_mip=no_mip,
+             image_filter=dds_options.image_filter,
              allow_slow_codec=dds_options.allow_slow_codec,
              export_as_cubemap=is_cube,
              cubemap_layout=cubemap_layout)
@@ -162,6 +165,7 @@ def put_export_options(context, layout):
     dds_options = context.scene.dds_options
     if not dds_properties_exist():
         layout.prop(dds_options, 'dxgi_format')
+    layout.prop(dds_options, 'image_filter')
     layout.prop(dds_options, 'invert_normals')
     if not dds_properties_exist():
         layout.prop(dds_options, 'no_mip')

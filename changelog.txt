@@ -1,3 +1,6 @@
+ver 0.2.1
+- Added a function to unload dll. (No need to restart Blender to uninstall the addon.)
+
 ver 0.2.0
 - Added "Import from a Directory" operation
 - Added "Export All Images" operation

@@ -5,7 +5,7 @@ import pytest
 from blender_dds_addon.ui import import_dds
 from blender_dds_addon.ui import export_dds
 from blender_dds_addon.ui import custom_properties
-
+from blender_dds_addon.directx.texconv import unload_texconv
 import bpy
 bpy.utils.register_class(custom_properties.DDSCustomProperties)
 custom_properties.add_custom_props_for_dds()
@@ -14,6 +14,15 @@ custom_properties.add_custom_props_for_dds()
 def get_test_dds():
     test_file = os.path.join("tests", "test.dds")
     return test_file
+
+
+def test_unload_empty_dll():
+    unload_texconv()
+
+
+def test_unload_dll():
+    import_dds.load_dds(get_test_dds())
+    unload_texconv()
 
 
 @pytest.mark.parametrize('export_format', ["BC4_UNORM", "B8G8R8A8_UNORM_SRGB", "R16G16B16A16_FLOAT"])

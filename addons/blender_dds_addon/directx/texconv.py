@@ -5,6 +5,7 @@ Notes:
     And put the dll in the same directory as texconv.py.
 """
 import ctypes
+from ctypes.util import find_library
 import os
 import tempfile
 
@@ -17,26 +18,22 @@ DLL = None
 
 def get_dll_close():
     """Get dll function to unload DLL."""
-    try:
-        if util.is_windows():
-            return ctypes.windll.kernel32.FreeLibrary
-        elif util.is_mac():
-            try:
-                # macOS 11 or later
-                stdlib = ctypes.CDLL("libc.dylib")
-            except OSError:
-                stdlib = ctypes.CDLL("libSystem")
-        elif util.is_linux():
-            try:
-                stdlib = ctypes.CDLL("")
-            except OSError:
-                # Alpine Linux
-                stdlib = ctypes.CDLL("libc.so")
-            return stdlib.dlclose
+    if util.is_windows():
+        return ctypes.windll.kernel32.FreeLibrary
+    else:
+        dlpath = find_library("c")
+        if dlpath is None:
+            dlpath = find_library("System")
+        elif dlpath is None:
+            # Failed to find the path to stdlib.
+            return None
 
-    except OSError:
-        # Failed to get the lib.
-        return None
+        try:
+            stdlib = ctypes.CDLL(dlpath)
+            return stdlib.dlclose
+        except OSError:
+            # Failed to load stdlib.
+            return None
 
 
 def unload_texconv():

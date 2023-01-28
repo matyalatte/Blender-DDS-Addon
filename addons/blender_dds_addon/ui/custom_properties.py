@@ -53,6 +53,17 @@ class DDSOptions(PropertyGroup):
         default=False,
     )
 
+    image_filter: EnumProperty(
+        name='Image Filter',
+        description="Image filter for mipmap generation",
+        items=[
+            ('POINT', 'Point', 'Nearest neighbor'),
+            ('LINEAR', 'Linear', 'Bilinear interpolation (or box filter)'),
+            ('CUBIC', 'Cubic', 'Bicubic interpolation'),
+        ],
+        default='LINEAR',
+    )
+
     allow_slow_codec: BoolProperty(
         name='Allow Slow Codec',
         description=("Allow to use CPU codec for BC6 and BC7.\n"

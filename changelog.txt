@@ -1,3 +1,8 @@
+ver 0.2.1
+- Fixed a bug that Blender can't remove the addon after using it in the process.
+- Added "Image Filter" option. (Possible to use cubic filter for mip generation.)
+- Improved error messages for unsupported files.
+
 ver 0.2.0
 - Added "Import from a Directory" operation
 - Added "Export All Images" operation

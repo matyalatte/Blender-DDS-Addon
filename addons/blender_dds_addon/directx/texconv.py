@@ -5,12 +5,50 @@ Notes:
     And put the dll in the same directory as texconv.py.
 """
 import ctypes
+from ctypes.util import find_library
 import os
 import tempfile
 
 from .dds import DDSHeader, is_hdr
 from .dxgi_format import DXGI_FORMAT
 from . import util
+
+DLL = None
+
+
+def get_dll_close():
+    """Get dll function to unload DLL."""
+    if util.is_windows():
+        return ctypes.windll.kernel32.FreeLibrary
+    else:
+        dlpath = find_library("c")
+        if dlpath is None:
+            dlpath = find_library("System")
+        elif dlpath is None:
+            # Failed to find the path to stdlib.
+            return None
+
+        try:
+            stdlib = ctypes.CDLL(dlpath)
+            return stdlib.dlclose
+        except OSError:
+            # Failed to load stdlib.
+            return None
+
+
+def unload_texconv():
+    global DLL
+    if DLL is None:
+        return
+
+    dll_close = get_dll_close()
+    if dll_close is None:
+        raise RuntimeError("Failed to unload DLL. Restart Blender if you will remove the addon.")
+
+    handle = DLL._handle
+    dll_close.argtypes = [ctypes.c_void_p]
+    dll_close(handle)
+    DLL = None
 
 
 class Texconv:
@@ -19,6 +57,11 @@ class Texconv:
         self.load_dll(dll_path=dll_path)
 
     def load_dll(self, dll_path=None):
+        global DLL
+        if DLL is not None:
+            self.dll = DLL
+            return
+
         if dll_path is None:
             file_path = os.path.realpath(__file__)
             if util.is_windows():
@@ -40,9 +83,17 @@ class Texconv:
                 raise RuntimeError(f'texconv not found. ({dll_path})')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
+        DLL = self.dll
+
+    def unload_dll(self):
+        unload_texconv()
+        self.dll = None
 
     def convert_to_tga(self, file, out=None, cubemap_layout="h-cross", invert_normals=False, verbose=True):
         """Convert dds to tga."""
+        if self.dll is None:
+            raise RuntimeError("texconv is unloaded.")
+
         dds_header = DDSHeader.read_from_file(file)
 
         if dds_header.is_3d():
@@ -86,10 +137,13 @@ class Texconv:
 
     def convert_to_dds(self, file, dds_fmt, out=None,
                        invert_normals=False, no_mip=False,
+                       image_filter="LINEAR",
                        export_as_cubemap=False,
                        cubemap_layout="h-cross",
                        verbose=True, allow_slow_codec=False):
         """Convert texture to dds."""
+        if self.dll is None:
+            raise RuntimeError("texconv is unloaded.")
 
         ext = util.get_ext(file)
 
@@ -110,6 +164,8 @@ class Texconv:
         args = ['-f', dds_fmt]
         if no_mip:
             args += ['-m', '1']
+        if image_filter != "LINEAR":
+            args += ["-if", image_filter]
 
         if ("BC5" in dds_fmt) and invert_normals:
             args += ['-inverty']

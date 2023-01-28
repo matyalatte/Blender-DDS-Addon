@@ -145,10 +145,17 @@ class DDSHeader(c.LittleEndianStructure):
                 raise RuntimeError(f"Unsupported DXGI format detected. ({fmt})\n" + ERR_MSG)
 
             head.dxgi_format = DXGI_FORMAT(fmt)  # dxgiFormat
-            util.read_const_uint32(f, 3)         # resourceDimension == 3
+            resource_dimension = util.read_uint32(f)
             f.seek(4, 1)                         # miscFlag == 0 or 4 (0 for 2D textures, 4 for Cube maps)
-            util.read_const_uint32(f, 1)         # arraySize == 1
+            array_size = util.read_uint32(f)
             f.seek(4, 1)                         # miscFlag2
+
+            # Raise errors for unsupported files
+            if resource_dimension == 2:
+                raise RuntimeError("1D textures are unsupported.")
+            if resource_dimension == 4:
+                raise RuntimeError("3D textures are unsupported.")
+            util.check(array_size, 1, msg="Texture arrays are unsupported.")
         else:
             head.dxgi_format = head.get_dxgi_from_header()
         return head

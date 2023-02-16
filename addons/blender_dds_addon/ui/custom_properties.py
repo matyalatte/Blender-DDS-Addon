@@ -1,10 +1,11 @@
 import bpy
-from bpy.props import BoolProperty, EnumProperty, PointerProperty
+from bpy.props import BoolProperty, EnumProperty, PointerProperty, CollectionProperty, IntProperty
 from bpy.types import PropertyGroup
 from .bpy_util import get_image_editor_space, dds_properties_exist
 from ..directx.dxgi_format import DXGI_FORMAT
+from .texture_list import DDSTextureListItem, draw_texture_list
 
-fmt_list = [fmt.name[12:] for fmt in DXGI_FORMAT]
+fmt_list = [fmt.name for fmt in DXGI_FORMAT]
 fmt_list = [fmt for fmt in fmt_list if "BC" in fmt] + [fmt for fmt in fmt_list if "BC" not in fmt]
 
 dic = {
@@ -24,18 +25,62 @@ def get_alt_fmt(fmt):
 
 def is_supported(fmt):
     return ('TYPELESS' not in fmt) and ('ASTC' not in fmt) and\
-           (len(fmt) > 4) and (fmt not in ["UNKNOWN", "420_OPAQUE"])
+           (len(fmt) > 4) and (fmt not in ["UNKNOWN", "OPAQUE_420"])
 
 
 DDS_FMT_ITEMS = [(fmt, get_alt_fmt(fmt), '') for fmt in fmt_list if is_supported(fmt)]
 DDS_FMT_NAMES = [fmt for fmt in fmt_list if is_supported(fmt)]
 
 
-class DDSOptions(PropertyGroup):
-    """Properties for operations."""
+class DDSPropBase:
+    no_mip: BoolProperty(
+        name='No Mipmaps',
+        description="Disable mipmap generation",
+        default=False,
+    )
 
+    texture_type: EnumProperty(
+        name='Type',
+        items=[
+            ('2d', '2D', '2D texture'),
+            ('cube', 'Cube', 'Cube map'),
+            ('2d_array', '2D Array', 'Array of 2D textures'),
+            ('cube_array', 'Cube Array', 'Array of cube maps'),
+            ('volume', 'Volume', '3D texture'),
+        ],
+        description=(
+            'Texture type'
+        ),
+        default='2d'
+    )
+
+    cubemap_layout: EnumProperty(
+        name='Layout for Cubemap Faces',
+        items=[
+            ('h-cross', 'Horizontal Cross', 'Align faces in a horizontal cross layout'),
+            ('v-cross', 'Vertical Cross', 'Align faces in a vertical cross layout'),
+            ('h-cross-fnz', 'Horizontal Cross (Flip -Z)',
+             'Align faces in a vertical cross layout. And Rotate -Z face by 180 degrees'),
+            ('v-cross-fnz', 'Vertical Cross (Flip -Z)',
+             'Align faces in a vertical cross layout. And Rotate -Z face by 180 degrees'),
+            ('h-strip', 'Horizontal Strip', 'Align faces horizontaly'),
+            ('v-strip', 'Vertical Strip', 'Align faces verticaly'),
+        ],
+        description=(
+            'How to align faces of a cubemap.\n'
+        ),
+        default='h-cross'
+    )
+
+    texture_list: CollectionProperty(type=DDSTextureListItem)
+
+    list_index: IntProperty(name="An extra texture for texture arrays or volume textures", default=0)
+
+
+class DDSOptions(DDSPropBase, PropertyGroup):
+    """Properties for operations."""
     dxgi_format: EnumProperty(
-        name='DDS format',
+        name='DXGI format',
         items=DDS_FMT_ITEMS,
         description="DXGI format for DDS",
         default='BC1_UNORM'
@@ -44,12 +89,6 @@ class DDSOptions(PropertyGroup):
     invert_normals: BoolProperty(
         name='Invert Normals',
         description="Invert G channel for BC5 textures",
-        default=False,
-    )
-
-    no_mip: BoolProperty(
-        name='No Mipmaps',
-        description="Disable mipmap generation",
         default=False,
     )
 
@@ -71,71 +110,14 @@ class DDSOptions(PropertyGroup):
         default=False,
     )
 
-    export_as_cubemap: BoolProperty(
-        name='Export as Cubemap',
-        description=("Export a texture as a cubemap.\n"
-                     'Faces should be aligned in a layout defined in "Layout for Cubemap Faces" option'),
-        default=False,
-    )
 
-    cubemap_layout: EnumProperty(
-        name='Layout for Cubemap Faces',
-        items=[
-            ('h-cross', 'Horizontal Cross', 'Align faces in a horizontal cross layout'),
-            ('v-cross', 'Vertical Cross', 'Align faces in a vertical cross layout'),
-            ('h-cross-fnz', 'Horizontal Cross (Flip -Z)',
-             'Align faces in a vertical cross layout. And Rotate -Z face by 180 degrees'),
-            ('v-cross-fnz', 'Vertical Cross (Flip -Z)',
-             'Align faces in a vertical cross layout. And Rotate -Z face by 180 degrees'),
-            ('h-strip', 'Horizontal Strip', 'Align faces horizontaly'),
-            ('v-strip', 'Vertical Strip', 'Align faces verticaly'),
-        ],
-        description=(
-            'How to align faces of a cubemap.\n'
-        ),
-        default='h-cross'
-    )
-
-
-class DDSCustomProperties(PropertyGroup):
+class DDSCustomProperties(DDSPropBase, PropertyGroup):
     """Properties for dds info."""
-
     dxgi_format: EnumProperty(
-        name='DDS format',
+        name='DXGI format',
         items=[('NONE', 'None', 'Skip this image when excuting the export opration.')] + DDS_FMT_ITEMS,
         description="DXGI format for DDS",
         default='NONE'
-    )
-
-    no_mip: BoolProperty(
-        name='No Mipmaps',
-        description="Disable mipmap generation",
-        default=False,
-    )
-
-    is_cube: BoolProperty(
-        name='Is Cubemap',
-        description=("Export this texture as a cubemap.\n"
-                     'Faces should be aligned in a layout defined in "Layout for Cubemap Faces" option'),
-        default=False,
-    )
-
-    cubemap_layout: EnumProperty(
-        name='Layout for Cubemap Faces',
-        items=[
-            ('h-cross', 'Horizontal Cross', 'Align faces in a horizontal cross layout'),
-            ('v-cross', 'Vertical Cross', 'Align faces in a vertical cross layout'),
-            ('h-cross-fnz', 'Horizontal Cross (Flip -Z)',
-             'Align faces in a vertical cross layout. And Rotate -Z face by 180 degrees'),
-            ('v-cross-fnz', 'Vertical Cross (Flip -Z)',
-             'Align faces in a vertical cross layout. And Rotate -Z face by 180 degrees'),
-            ('h-strip', 'Horizontal Strip', 'Align faces horizontaly'),
-            ('v-strip', 'Vertical Strip', 'Align faces verticaly'),
-        ],
-        description=(
-            'How to align faces of a cubemap.\n'
-        ),
-        default='h-cross'
     )
 
 
@@ -166,12 +148,15 @@ class DDS_PT_property_panel(bpy.types.Panel):
         tex = get_image_editor_space(context).image
         if tex is None:
             return
-        layout.prop(tex.dds_props, "dxgi_format")
+        dds_props = tex.dds_props
+        layout.prop(dds_props, "dxgi_format")
         if tex.dds_props.dxgi_format != "NONE":
-            layout.prop(tex.dds_props, "no_mip")
-            layout.prop(tex.dds_props, "is_cube")
-            if tex.dds_props.is_cube:
-                layout.prop(tex.dds_props, "cubemap_layout")
+            layout.prop(dds_props, "no_mip")
+            layout.prop(dds_props, 'texture_type')
+            if dds_props.texture_type in ["cube", "cube_array"]:
+                layout.prop(dds_props, "cubemap_layout")
+            if dds_props.texture_type in ["2d_array", "cube_array", "volume"]:
+                draw_texture_list(layout, context, dds_props)
 
 
 classes = (

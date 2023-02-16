@@ -2,11 +2,14 @@
 import os
 import pytest
 
-from blender_dds_addon.ui import import_dds
-from blender_dds_addon.ui import export_dds
-from blender_dds_addon.ui import custom_properties
+from blender_dds_addon.ui import (import_dds,
+                                  export_dds,
+                                  texture_list,
+                                  custom_properties)
 from blender_dds_addon.directx.texconv import unload_texconv
 import bpy
+
+bpy.utils.register_class(texture_list.DDSTextureListItem)
 bpy.utils.register_class(custom_properties.DDSCustomProperties)
 custom_properties.add_custom_props_for_dds()
 
@@ -51,7 +54,17 @@ def test_io_invert_y():
 def test_io_cubemap():
     """Test with cubemap."""
     tex = import_dds.load_dds(os.path.join("tests", "cube.dds"))
-    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", export_as_cubemap=True)
+    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", texture_type="cube")
+    os.remove("saved.dds")
+
+
+def test_io_array():
+    """Test with cubemap."""
+    tex = import_dds.load_dds(os.path.join("tests", "array.dds"))
+    extra_texture_list = tex.dds_props.texture_list
+    extra_texture_list = [t.texture for t in extra_texture_list]
+    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", texture_type="2d_array",
+                              extra_texture_list=extra_texture_list)
     os.remove("saved.dds")
 
 

@@ -2,13 +2,13 @@
 import importlib
 from pathlib import Path
 
-from .ui import import_dds, export_dds, custom_properties, preferences
+from .ui import import_dds, export_dds, custom_properties, preferences, texture_list
 from .directx.texconv import unload_texconv
 
 bl_info = {
     'name': 'DDS textures',
     'author': 'Matyalatte',
-    'version': (0, 2, 1),
+    'version': (0, 3, 0),
     'blender': (2, 83, 20),
     'location': 'Image Editor > Sidebar > DDS Tab',
     'description': 'Import and export .dds files',
@@ -35,18 +35,23 @@ if ".import_dds" in locals():
     reload_package(locals())
 
 
+modules = [
+    preferences,
+    import_dds,
+    export_dds,
+    texture_list,
+    custom_properties
+]
+
+
 def register():
     """Add addon."""
-    preferences.register()
-    import_dds.register()
-    export_dds.register()
-    custom_properties.register()
+    for module in modules:
+        module.register()
 
 
 def unregister():
     """Remove addon."""
-    preferences.unregister()
-    import_dds.unregister()
-    export_dds.unregister()
-    custom_properties.unregister()
+    for module in modules:
+        module.unregister()
     unload_texconv()

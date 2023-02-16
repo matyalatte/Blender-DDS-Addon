@@ -13,6 +13,7 @@ htmlcov
 *.dds
 !tests/test.dds
 !tests/cube.dds
+!tests/array.dds
 *.tga
 *.png
 *.jpg

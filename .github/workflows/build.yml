@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.check-tag.outputs.version }}
-      url: ${{ steps.create-release.outputs.upload_url }}
     steps:
     
       - name: Check tag
@@ -25,17 +24,15 @@ jobs:
           else
             VERSION=""
           fi
-          echo "::set-output name=version::$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         shell: bash
       
       - name: Create Release Draft
         id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          name: ${{ github.ref }}
           body: |
             Changelog
             - First Change
@@ -72,28 +69,22 @@ jobs:
 
       - name: Copy files
         run: |
-          mkdir -p ../release
-          cp -r addons/${{ env.ZIP_NAME }} ../release
-          cp changelog.txt ../release/${{ env.ZIP_NAME }}
-          cp LICENSE ../release/${{ env.ZIP_NAME }}
-          cp external/Texconv-Custom-DLL/*texconv.* ../release/${{ env.ZIP_NAME }}/directx
+          mkdir -p release
+          cp -r addons/${{ env.ZIP_NAME }} release
+          cp changelog.txt release/${{ env.ZIP_NAME }}
+          cp LICENSE release/${{ env.ZIP_NAME }}
+          cp external/Texconv-Custom-DLL/*texconv.* release/${{ env.ZIP_NAME }}/directx
         shell: bash
       
       - name: Archive Release
         uses: thedoctor0/zip-release@master
         with:
-          directory: '../release'
+          directory: 'release'
           type: 'zip'
-          filename: '${{ env.ZIP_NAME }}.zip'
+          filename: '${{ env.ZIP_NAME }}${{ needs.setup.outputs.version }}_${{ runner.os }}.zip'
           exclusions: '*.git* .gitignore'
 
       - name: Upload Release Asset
-        id: upload-release-asset-python
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.setup.outputs.url }}
-          asset_path: ../release/${{ env.ZIP_NAME }}.zip
-          asset_name: ${{ env.ZIP_NAME }}${{ needs.setup.outputs.version }}_${{ runner.os }}.zip
-          asset_content_type: application/zip
+        run: gh release upload ${{ github.ref }} release/${{ env.ZIP_NAME }}${{ needs.setup.outputs.version }}_${{ runner.os }}.zip

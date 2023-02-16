@@ -14,32 +14,12 @@ def get_ext(file):
     return file.split('.')[-1].lower()
 
 
-def check(actual, expected, f=None, msg='Parse failed. This is unexpected error.'):
-    """Check if actual and expected is the same."""
-    if actual != expected:
-        if f is not None:
-            print(f'offset: {f.tell()}')
-        print(f'actual: {actual}')
-        print(f'expected: {expected}')
-        raise RuntimeError(msg)
-
-
-def read_uint32(f):
-    """Read 4-byte as uint."""
-    binary = f.read(4)
-    return int.from_bytes(binary, "little")
-
-
-def read_const_uint32(f, n, msg='Unexpected Value!'):
-    """Read uint32 and check if it's the same as specified value."""
-    const = read_uint32(f)
-    check(const, n, f, msg)
-
-
-def write_uint32(f, n):
-    """Write int as uint32."""
-    binary = n.to_bytes(4, byteorder="little")
-    f.write(binary)
+def get_size(f):
+    pos = f.tell()
+    f.seek(0, 2)
+    size = f.tell()
+    f.seek(pos)
+    return size
 
 
 def get_os_name():

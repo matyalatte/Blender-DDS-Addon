@@ -12,7 +12,7 @@ from bpy.types import Operator
 from bpy_extras.io_utils import ImportHelper
 import numpy as np
 
-from ..directx.dds import DDSHeader
+from ..directx.dds import DDSHeader, DDS
 from ..directx.texconv import Texconv
 from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist, flush_stdout
 from .custom_properties import DDS_FMT_NAMES
@@ -30,60 +30,92 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
     Returns:
         tex (bpy.types.Image): loaded texture
     """
-    tex = None
+    tex_list = []
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             temp = os.path.join(temp_dir, os.path.basename(file))
             shutil.copyfile(file, temp)
 
-            # Convert dds to tga
             if texconv is None:
                 texconv = Texconv()
-            temp_tga = texconv.convert_to_tga(temp, out=temp_dir, cubemap_layout=cubemap_layout,
-                                              invert_normals=invert_normals)
-            if temp_tga is None:
-                raise RuntimeError('Failed to convert texture.')
+
+            dds_header = DDSHeader.read_from_file(temp)
 
             # Check dxgi_format
-            dds_header = DDSHeader.read_from_file(temp)
             if dds_header.is_srgb():
                 color_space = 'sRGB'
             else:
                 color_space = 'Non-Color'
 
-            # Load tga file
-            tex = load_texture(temp_tga, name=os.path.basename(temp_tga)[:-4], color_space=color_space)
+            tga_list = []
 
-            if dds_properties_exist():
-                # Update custom properties
-                props = tex.dds_props
-                dxgi = dds_header.get_format_as_str()
-                if dxgi in DDS_FMT_NAMES:
-                    props.dxgi_format = dxgi
-                props.no_mip = dds_header.mipmap_num <= 1
-                props.is_cube = dds_header.is_cube()
-                if props.is_cube:
-                    props.cubemap_layout = cubemap_layout
-
-        if cubemap_layout.endswith("-fnz"):
-            # Flip -z face for cubemaps
-            w, h = tex.size
-            pix = np.array(tex.pixels).reshape((h, w, -1))
-            if cubemap_layout[0] == "v":
-                pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2] = (pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2])[::-1, ::-1]
+            # Disassemble if it's a non-2D texture
+            if dds_header.is_3d() or dds_header.is_array():
+                dds = DDS.load(temp)
+                dds_list = dds.get_disassembled_dds_list()
+                base_name = os.path.basename(temp)
+                for new_dds, i in zip(dds_list, range(len(dds_list))):
+                    new_name = ".".join(base_name.split(".")[:-1])
+                    if i >= 1:
+                        new_name += f"-{i}"
+                    new_name += ".dds"
+                    new_path = os.path.join(temp_dir, new_name)
+                    new_dds.save(new_path)
+                    tga = texconv.convert_to_tga(new_path, out=temp_dir, cubemap_layout=cubemap_layout,
+                                                 invert_normals=invert_normals)
+                    tga_list.append(tga)
             else:
-                pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4] = (pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4])[::-1, ::-1]
-            pix = pix.flatten()
-            tex.pixels = list(pix)
+                tga = texconv.convert_to_tga(temp, out=temp_dir, cubemap_layout=cubemap_layout,
+                                             invert_normals=invert_normals)
+                tga_list = [tga]
 
-        tex.update()
+            for tga in tga_list:
+                if tga is None:
+                    raise RuntimeError('Failed to convert texture.')
+
+                # Load tga file
+                tex = load_texture(tga, name=os.path.basename(tga)[:-4], color_space=color_space)
+                tex_list.append(tex)
+
+        tex = tex_list[0]
+        if dds_properties_exist():
+            # Update custom properties
+            props = tex.dds_props
+            dxgi = dds_header.get_format_as_str()
+            if dxgi in DDS_FMT_NAMES:
+                props.dxgi_format = dxgi
+            props.no_mip = dds_header.mipmap_num <= 1
+            props.texture_type = dds_header.get_texture_type()
+            if dds_header.is_cube():
+                props.cubemap_layout = cubemap_layout
+            if dds_header.is_3d() or dds_header.is_array():
+                for tex in tex_list[1:]:
+                    new_item = props.texture_list.add()
+                    new_item.texture = tex
+
+        for tex in tex_list:
+            if cubemap_layout.endswith("-fnz"):
+                # Flip -z face for cubemaps
+                w, h = tex.size
+                pix = np.array(tex.pixels).reshape((h, w, -1))
+                if cubemap_layout[0] == "v":
+                    pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2] = \
+                        (pix[h//4 * 0: h//4 * 1, w//3 * 1: w//3 * 2])[::-1, ::-1]
+                else:
+                    pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4] = \
+                        (pix[h//3 * 1: h//3 * 2, w//4 * 3: w//4 * 4])[::-1, ::-1]
+                pix = pix.flatten()
+                tex.pixels = list(pix)
+
+            tex.update()
 
     except Exception as e:
-        if tex is not None:
-            bpy.data.images.remove(tex)
+        for tex in tex_list:
+            if tex is not None:
+                bpy.data.images.remove(tex)
         raise e
 
-    return tex
+    return tex_list[0]
 
 
 def import_dds(context, file):

@@ -96,8 +96,17 @@ class Texconv:
 
         dds_header = DDSHeader.read_from_file(file)
 
-        if dds_header.is_3d():
-            raise RuntimeError('Can not convert 3D textures with texconv.')
+        if dds_header.dxgi_format.value > DXGI_FORMAT.get_max_canonical():
+            raise RuntimeError(
+                f"DDS converter does NOT support {dds_header.get_format_as_str()}.\n"
+                "Use '.dds' as an export format."
+            )
+
+        if dds_header.is_3d() or dds_header.is_array():
+            raise RuntimeError("DDS converter does Not support non-2D textures.")
+
+        if dds_header.is_partial_cube():
+            raise RuntimeError("Partial cubemaps are unsupported.")
 
         if verbose:
             print(f'DXGI_FORMAT: {dds_header.get_format_as_str()}')
@@ -152,7 +161,7 @@ class Texconv:
         if ('BC6' in dds_fmt or 'BC7' in dds_fmt) and (not util.is_windows()) and (not allow_slow_codec):
             raise RuntimeError(f'Can NOT use CPU codec for {dds_fmt}. Or enable the "Allow Slow Codec" option.')
 
-        if not DXGI_FORMAT.is_valid_format("DXGI_FORMAT_" + dds_fmt):
+        if not DXGI_FORMAT.is_valid_format(dds_fmt):
             raise RuntimeError(f'Not DXGI format. ({dds_fmt})')
 
         if verbose:

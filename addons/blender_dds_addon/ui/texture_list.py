@@ -79,7 +79,7 @@ class DDS_OT_list_delete_item(Operator):
         texture_list.remove(index)
         tex.dds_props.list_index = min(max(0, index - 1), len(texture_list) - 1)
 
-        return{'FINISHED'}
+        return {'FINISHED'}
 
 
 class DDS_OT_list_move_item(Operator):
@@ -121,7 +121,7 @@ class DDS_OT_list_move_item(Operator):
         texture_list.move(neighbor, index)
         self.move_index(context)
 
-        return{'FINISHED'}
+        return {'FINISHED'}
 
 
 def check_tex_status(context, extra_tex, layout, show_msg=False):

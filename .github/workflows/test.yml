@@ -80,7 +80,7 @@ jobs:
           cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon/directx
       
       - name: Set up Python v${{ env.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.python-version }}
 
@@ -131,7 +131,7 @@ jobs:
           $PYTHON_BLENDER_EXECUTABLE = pytest-blender --blender-executable "$(Get-Variable -Name BLENDER_EXECUTABLE -ValueOnly)"
           echo "PYTHON_BLENDER_EXECUTABLE: $PYTHON_BLENDER_EXECUTABLE"
           Invoke-Expression "$PYTHON_BLENDER_EXECUTABLE -m pip install pytest==${{ env.pytest-version }}"
-          echo "::set-output name=blender-executable::$BLENDER_EXECUTABLE"
+          echo "blender-executable=$BLENDER_EXECUTABLE" >> "$env:GITHUB_OUTPUT"
 
       # Install dependencies on Unix-based systems
       - name: Install dependencies for Unix
@@ -147,7 +147,7 @@ jobs:
           echo "PYTHON_BLENDER_EXECUTABLE: $PYTHON_BLENDER_EXECUTABLE"
           $PYTHON_BLENDER_EXECUTABLE -m ensurepip
           $PYTHON_BLENDER_EXECUTABLE -m pip install pytest==${{ env.pytest-version }}
-          echo "::set-output name=blender-executable::$BLENDER_EXECUTABLE"
+          echo "blender-executable=$BLENDER_EXECUTABLE" >> "$GITHUB_OUTPUT"
 
       - name: Tests for Windows
         if: runner.os == 'Windows'

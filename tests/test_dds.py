@@ -15,7 +15,7 @@ custom_properties.add_custom_props_for_dds()
 
 
 def get_test_dds():
-    test_file = os.path.join("tests", "test.dds")
+    test_file = os.path.join("tests", "2d.dds")
     return test_file
 
 
@@ -58,12 +58,14 @@ def test_io_cubemap():
     os.remove("saved.dds")
 
 
-def test_io_array():
-    """Test with cubemap."""
-    tex = import_dds.load_dds(os.path.join("tests", "array.dds"))
+@pytest.mark.parametrize("texture_type", ["2d_array", "volume", "cube_array"])
+def test_io_array(texture_type):
+    """Test with texture arrays."""
+    tex = import_dds.load_dds(os.path.join("tests", texture_type + ".dds"))
+    assert tex.dds_props.texture_type == texture_type
     extra_texture_list = tex.dds_props.texture_list
     extra_texture_list = [t.texture for t in extra_texture_list]
-    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", texture_type="2d_array",
+    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", texture_type=texture_type,
                               extra_texture_list=extra_texture_list)
     os.remove("saved.dds")
 

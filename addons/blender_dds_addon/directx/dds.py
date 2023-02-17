@@ -421,7 +421,7 @@ class DDSHeader(c.LittleEndianStructure):
 
     def get_texture_type(self):
         if self.is_3d():
-            return "valume"
+            return "volume"
         if self.is_cube():
             t = "cube"
         else:

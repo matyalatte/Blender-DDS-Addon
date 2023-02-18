@@ -1,3 +1,6 @@
+ver 0.3.1
+- Fixed an error when loading volume textures.
+
 ver 0.3.0
 - Support texture arrays and volume textures.
 

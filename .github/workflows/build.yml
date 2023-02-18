@@ -13,7 +13,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.check-tag.outputs.tag }}
+      tag: ${{ steps.check-tag.outputs.tag }}
     steps:
     
       - name: Check tag
@@ -22,7 +22,7 @@ jobs:
           if [[ ${{ github.ref }} == refs/tags/v* ]]; then
             TAG=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
           else
-            TAG=${{ github.ref }}
+            TAG=$(echo ${{ github.sha }} | cut -c1-7)
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
         shell: bash

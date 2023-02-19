@@ -13,26 +13,26 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.check-tag.outputs.version }}
+      tag: ${{ steps.check-tag.outputs.tag }}
     steps:
     
       - name: Check tag
         id: check-tag
         run: |
           if [[ ${{ github.ref }} == refs/tags/v* ]]; then
-            VERSION=_$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
+            TAG=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
           else
-            VERSION=""
+            TAG=$(echo ${{ github.sha }} | cut -c1-7)
           fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
         shell: bash
       
       - name: Create Release Draft
         id: create-release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          name: ${{ github.ref }}
+          tag_name: ${{ steps.check-tag.outputs.tag }}
+          name: ${{ steps.check-tag.outputs.tag }}
           body: |
             Changelog
             - First Change
@@ -81,10 +81,10 @@ jobs:
         with:
           directory: 'release'
           type: 'zip'
-          filename: '${{ env.ZIP_NAME }}${{ needs.setup.outputs.version }}_${{ runner.os }}.zip'
+          filename: '${{ env.ZIP_NAME }}_${{ needs.setup.outputs.tag }}_${{ runner.os }}.zip'
           exclusions: '*.git* .gitignore'
 
       - name: Upload Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.ref }} release/${{ env.ZIP_NAME }}${{ needs.setup.outputs.version }}_${{ runner.os }}.zip
+        run: gh release upload ${{ needs.setup.outputs.tag }} release/${{ env.ZIP_NAME }}_${{ needs.setup.outputs.tag }}_${{ runner.os }}.zip

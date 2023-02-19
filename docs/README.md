@@ -1,4 +1,4 @@
-# Blender-DDS-Addon v0.3.0
+# Blender-DDS-Addon v0.3.1
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![build](https://github.com/matyalatte/Blender-DDS-Addon/actions/workflows/build.yml/badge.svg)

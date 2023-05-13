@@ -124,7 +124,8 @@ def import_dds(context, file):
     dds_options = context.scene.dds_options
     tex = load_dds(file, invert_normals=dds_options.invert_normals,
                    cubemap_layout=dds_options.cubemap_layout)
-    space.image = tex
+    if space:
+        space.image = tex
 
 
 def import_dds_rec(context, folder, count=0):

@@ -19,10 +19,8 @@ def get_addon_preferences(context, addon_name):
 def get_image_editor_space(context):
     area = context.area
     if area.type == 'IMAGE_EDITOR':
-        space = area.spaces.active
-    else:
-        raise RuntimeError('Failed to get Image Editor. This is unexpected.')
-    return space
+        return area.spaces.active
+    return None
 
 
 def get_selected_tex(context):

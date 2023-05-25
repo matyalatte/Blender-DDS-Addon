@@ -15,7 +15,7 @@ Make sure that [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom
 
 If you won't use Visual Studio 2022, you could need to edit cmake commands in batch files.
 
-### for Unix
+### for Unix/Lunux
 
 - xcode (for macOS)
 - build-essential (for Ubuntu)
@@ -28,7 +28,7 @@ Move to `./Blender-DDS-Addon`.
 Then, type `git submodule update --init --recursive`.  
 It'll clone external repositories to the addon's repo.
 
-## 2. Get `sal.h` (for Unix systems)
+## 2. Get `sal.h` (for Unix/Linux systems)
 
 If you are using non-Windows platforms, you should download [sal.h](https://github.com/dotnet/corert/blob/master/src/Native/inc/unix/sal.h)
 for DirectXMath.  
@@ -44,7 +44,7 @@ Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL/batch_files`.
 Then, type `build_small.bat`.  
 `texconv.dll` will be generated in `./Blender-DDS-Addon/external/Texconv-Custom-DLL/`  
 
-### for Unix
+### for Unix/Linux
 
 Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL/shell_scripts`.  
 Then, type `bash build_small.sh`.  

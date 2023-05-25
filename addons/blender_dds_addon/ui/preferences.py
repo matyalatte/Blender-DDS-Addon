@@ -1,3 +1,9 @@
+"""UI panel for addon preferences.
+
+Notes:
+    Edit > Preferences > Add-ons > Imoprt-Export: DDS textures
+"""
+
 import bpy
 from bpy.types import AddonPreferences
 from bpy.props import BoolProperty

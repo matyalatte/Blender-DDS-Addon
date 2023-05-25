@@ -40,7 +40,7 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         texconv (Texconv): Texture converter for dds.
 
     Returns:
-        tex (bpy.types.Image): loaded texture
+        tex (bpy.types.Image): saved texture
     """
     is_cube = "cube" in texture_type
     is_array = "array" in texture_type

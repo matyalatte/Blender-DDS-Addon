@@ -1,5 +1,6 @@
-# Blender-DDS-Addon v0.3.1
+# Blender-DDS-Addon v0.3.2
 
+[![Github All Releases](https://img.shields.io/github/downloads/matyalatte/Blender-DDS-Addon/total.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![build](https://github.com/matyalatte/Blender-DDS-Addon/actions/workflows/build.yml/badge.svg)
 <a href="https://www.buymeacoffee.com/matyalatteQ" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>  
@@ -124,7 +125,7 @@ See wiki pages for the details.
 - [Cubemaps](https://github.com/matyalatte/Blender-DDS-Addon/wiki/Cubemaps)  
 - [Texture Arrays](https://github.com/matyalatte/Blender-DDS-Addon/wiki/Texture-Arrays)  
 
-## External Dependencies
+## External Projects
 
 ### Texconv-Custom-DLL
 
@@ -132,15 +133,15 @@ See wiki pages for the details.
 is a texture converter developed by Microsoft.  
 It's the best DDS converter as far as I know.  
 And [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL) is a cross-platform implementation I made.  
-The official Texconv only supports Windows but you can use it on Unix systems.  
+The official Texconv only supports Windows but you can use it on Unix/Linux systems.  
 
 ## License
 
-Files in this repository (including all submodules) are licensed under [MIT license](../LICENSE).
+Files in this repository (including all submodules) are available under the [MIT license](../LICENSE).
 
 ## For Developers
 
 There are some documents for developers.
 
-- [How to Build](./How-To-Build.md): See here if you want to know how to create a zip from the repository.
-- [Tools for development](./For-Dev.md): See here if you want to know how to test the addon.
+- [How to Build](./How-To-Build.md): How to create a zip from the repository.
+- [Tools for development](./For-Dev.md): How to test the addon.

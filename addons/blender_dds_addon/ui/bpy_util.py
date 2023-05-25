@@ -34,7 +34,7 @@ def load_texture(file, name, color_space='Non-Color'):
     """Load a texture file.
 
     Args:
-        file (string): file path for dds
+        file (string): file path for tga
         name (string): object name for the texture
         color_space (string): color space
 

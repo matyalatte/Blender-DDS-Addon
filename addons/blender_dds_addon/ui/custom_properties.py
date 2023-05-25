@@ -8,7 +8,7 @@ from .texture_list import DDSTextureListItem, draw_texture_list
 fmt_list = [fmt.name for fmt in DXGI_FORMAT]
 fmt_list = [fmt for fmt in fmt_list if "BC" in fmt] + [fmt for fmt in fmt_list if "BC" not in fmt]
 
-dic = {
+alt_format = {
     "BC1_UNORM": " (DXT1)",
     "BC3_UNORM": " (DXT5)",
     "BC4_UNORM": " (ATI1)",
@@ -18,8 +18,8 @@ dic = {
 
 def get_alt_fmt(fmt):
     """Add alt name for the format."""
-    if fmt in dic:
-        return fmt + dic[fmt]
+    if fmt in alt_format:
+        return fmt + alt_format[fmt]
     return fmt
 
 

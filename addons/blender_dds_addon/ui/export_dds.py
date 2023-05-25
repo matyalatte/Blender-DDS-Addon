@@ -14,7 +14,7 @@ import numpy as np
 
 from ..directx.dds import is_hdr, DDS
 from ..directx.texconv import Texconv
-from .bpy_util import save_texture, dds_properties_exist, get_selected_tex, flush_stdout
+from .bpy_util import save_texture, dds_properties_exist, get_image_editor_space, flush_stdout
 from .texture_list import draw_texture_list
 
 
@@ -240,7 +240,14 @@ class DDS_OT_export_base(Operator):
                     count += 1
             else:
                 # For DDS_OT_export_dds
-                tex = get_selected_tex(context)
+                space = get_image_editor_space(context)
+                if space is None:
+                    raise RuntimeError('Image Editor should be activated.')
+                tex = space.image
+                if tex is None:
+                    raise RuntimeError('An image should be selected on Image Editor.')
+                if dds_properties_exist() and tex.dds_props.dxgi_format == "NONE":
+                    raise RuntimeError("DXGI format should NOT be 'None'.")
                 export_as_dds(context, tex, file)
                 count = 1
 
@@ -278,10 +285,6 @@ class DDS_OT_export_dds(DDS_OT_export_base, ExportHelper):
     )
 
     def invoke(self, context, event):
-        tex = get_selected_tex(context)
-        if dds_properties_exist() and tex.dds_props.dxgi_format == "NONE":
-            self.report({'ERROR'}, "Select a DXGI format for the image.")
-            return {'CANCELLED'}
         return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):

@@ -1,3 +1,7 @@
+ver 0.3.2
+- Fixed an error when importing dds without image editor opened.
+- Fixed an error when changing workspace with file picker opened.
+
 ver 0.3.1
 - Fixed an error when loading volume textures.
 

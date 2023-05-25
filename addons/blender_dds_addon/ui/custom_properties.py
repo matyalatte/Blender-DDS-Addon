@@ -1,7 +1,7 @@
 import bpy
 from bpy.props import BoolProperty, EnumProperty, PointerProperty, CollectionProperty, IntProperty
 from bpy.types import PropertyGroup
-from .bpy_util import get_image_editor_space, dds_properties_exist
+from .bpy_util import get_selected_tex, dds_properties_exist
 from ..directx.dxgi_format import DXGI_FORMAT
 from .texture_list import DDSTextureListItem, draw_texture_list
 
@@ -145,7 +145,7 @@ class DDS_PT_property_panel(bpy.types.Panel):
         if not dds_properties_exist():
             return
         layout = self.layout
-        tex = get_image_editor_space(context).image
+        tex = get_selected_tex(context)
         if tex is None:
             return
         dds_props = tex.dds_props

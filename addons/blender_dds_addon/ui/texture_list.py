@@ -1,7 +1,7 @@
 import bpy
 from bpy.props import PointerProperty, EnumProperty
 from bpy.types import PropertyGroup, Image, UIList, Operator
-from .bpy_util import get_image_editor_space, dds_properties_exist
+from .bpy_util import get_selected_tex, dds_properties_exist
 
 
 class DDSTextureListItem(PropertyGroup):
@@ -38,8 +38,7 @@ class DDS_UL_texture_list(UIList):
 def get_tex(context):
     if not dds_properties_exist():
         return None
-    tex = get_image_editor_space(context).image
-    return tex
+    return get_selected_tex(context)
 
 
 class DDS_OT_list_new_item(Operator):
@@ -130,7 +129,7 @@ def check_tex_status(context, extra_tex, layout, show_msg=False):
         if show_msg:
             layout.label(text="Specify a texture or remove this item.")
         return
-    tex = get_image_editor_space(context).image
+    tex = get_selected_tex(context)
     w, h = tex.size
     extra_w, extra_h = extra_tex.size
     if w != extra_w or h != extra_h:

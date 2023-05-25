@@ -18,17 +18,16 @@ def get_addon_preferences(context, addon_name):
 
 def get_image_editor_space(context):
     area = context.area
-    if area.type == 'IMAGE_EDITOR':
+    if area and area.type == 'IMAGE_EDITOR':
         return area.spaces.active
     return None
 
 
 def get_selected_tex(context):
     space = get_image_editor_space(context)
-    tex = space.image
-    if tex is None:
-        raise RuntimeError('Select an image on Image Editor.')
-    return tex
+    if space:
+        return space.image
+    return None
 
 
 def load_texture(file, name, color_space='Non-Color'):

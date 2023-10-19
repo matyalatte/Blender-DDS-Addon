@@ -131,10 +131,11 @@ def import_dds(context, file):
 def import_dds_rec(context, folder, count=0):
     """Search a folder recursively, and import found dds files."""
     for file in sorted(os.listdir(folder)):
-        if os.path.isdir(file):
-            count += import_dds_rec(context, os.path.join(folder, file), count=count)
+        path = os.path.join(folder, file)
+        if os.path.isdir(path):
+            count += import_dds_rec(context, path, count=count)
         elif file.split('.')[-1].lower() == "dds":
-            import_dds(context, os.path.join(folder, file))
+            import_dds(context, path)
             count += 1
     return count
 

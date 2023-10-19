@@ -1,3 +1,6 @@
+ver 0.3.3
+- Fixed an error when importing files from some specific directory structures.
+
 ver 0.3.2
 - Fixed an error when importing dds without image editor opened.
 - Fixed an error when changing workspace with file picker opened.

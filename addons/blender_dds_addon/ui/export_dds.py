@@ -13,7 +13,7 @@ from bpy_extras.io_utils import ExportHelper
 import numpy as np
 
 from ..directx.dds import is_hdr, DDS
-from ..directx.texconv import Texconv
+from ..directx.texconv import Texconv, unload_texconv
 from .bpy_util import save_texture, dds_properties_exist, get_image_editor_space, flush_stdout
 from .texture_list import draw_texture_list
 
@@ -266,6 +266,10 @@ class DDS_OT_export_base(Operator):
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
+
+        # release DLL resources
+        unload_texconv()
+
         return ret
 
 

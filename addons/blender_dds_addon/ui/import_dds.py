@@ -13,7 +13,7 @@ from bpy_extras.io_utils import ImportHelper
 import numpy as np
 
 from ..directx.dds import DDSHeader, DDS
-from ..directx.texconv import Texconv
+from ..directx.texconv import Texconv, unload_texconv
 from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist, flush_stdout
 from .custom_properties import DDS_FMT_NAMES
 
@@ -183,6 +183,9 @@ class DDS_OT_import_base(Operator):
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
+
+        # release DLL resources
+        unload_texconv()
 
         return ret
 

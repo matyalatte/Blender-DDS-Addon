@@ -6,12 +6,15 @@ from blender_dds_addon.ui import (import_dds,
                                   export_dds,
                                   texture_list,
                                   custom_properties)
-from blender_dds_addon.directx.texconv import unload_texconv
+from blender_dds_addon.directx.texconv import Texconv, unload_texconv
 import bpy
 
 bpy.utils.register_class(texture_list.DDSTextureListItem)
 bpy.utils.register_class(custom_properties.DDSCustomProperties)
 custom_properties.add_custom_props_for_dds()
+
+texconv = Texconv()
+texconv.dll.init_com()
 
 
 def get_test_dds():

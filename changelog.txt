@@ -2,6 +2,7 @@ ver 0.3.3
 - Fixed a crash when closing Blender after exporting BC6 or BC7 textures.
 - Fixed a bug that sRGB formats make textures brighter when exporting.
 - Fixed an error when importing files from some specific directory structures.
+- Added an error for ARM devices.
 
 ver 0.3.2
 - Fixed an error when importing dds without image editor opened.

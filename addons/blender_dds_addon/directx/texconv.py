@@ -74,13 +74,12 @@ class Texconv:
                 raise RuntimeError(f'This OS ({util.get_os_name()}) is unsupported.')
             dirname = os.path.dirname(file_path)
             dll_path = os.path.join(dirname, dll_name)
-            dll_path2 = os.path.join(os.path.dirname(dirname), dll_name)  # allow ../texconv.dll
+
+            if util.is_arm():
+                raise RuntimeError(f'{dll_name} does NOT support ARM devices')
 
         if not os.path.exists(dll_path):
-            if os.path.exists(dll_path2):
-                dll_path = dll_path2
-            else:
-                raise RuntimeError(f'texconv not found. ({dll_path})')
+            raise RuntimeError(f'texconv not found. ({dll_path})')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
         DLL = self.dll

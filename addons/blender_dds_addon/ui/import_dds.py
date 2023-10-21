@@ -128,12 +128,13 @@ def import_dds(context, file):
         space.image = tex
 
 
-def import_dds_rec(context, folder, count=0):
+def import_dds_rec(context, folder):
     """Search a folder recursively, and import found dds files."""
+    count = 0
     for file in sorted(os.listdir(folder)):
         path = os.path.join(folder, file)
         if os.path.isdir(path):
-            count += import_dds_rec(context, path, count=count)
+            count += import_dds_rec(context, path)
         elif file.split('.')[-1].lower() == "dds":
             import_dds(context, path)
             count += 1

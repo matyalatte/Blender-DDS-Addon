@@ -59,13 +59,13 @@ jobs:
         if: runner.os=='Windows'
         run: |
           cd external/Texconv-Custom-DLL/batch_files
-          ./build_small.bat
+          ./build.bat
       
       - name: build shared library (for Unix)
         if: runner.os!='Windows'
         run: |
           cd external/Texconv-Custom-DLL/shell_scripts
-          bash build_small.sh
+          bash build.sh
 
       - name: Copy files
         run: |

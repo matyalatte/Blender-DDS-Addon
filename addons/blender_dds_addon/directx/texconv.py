@@ -176,6 +176,9 @@ class Texconv:
         if image_filter != "LINEAR":
             args += ["-if", image_filter]
 
+        if "SRGB" in dds_fmt:
+            args += ['-srgb']
+
         if ("BC5" in dds_fmt) and invert_normals:
             args += ['-inverty']
 

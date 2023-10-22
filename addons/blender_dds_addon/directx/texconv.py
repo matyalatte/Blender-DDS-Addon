@@ -16,24 +16,34 @@ from . import util
 DLL = None
 
 
+def get_dll_close_from_lib(lib_name):
+    """Return dll function to unlaod DLL if the library has it."""
+    dlpath = find_library(lib_name)
+    if dlpath is None:
+        # DLL not found.
+        return None
+    try:
+        lib = ctypes.CDLL(dlpath)
+        if hasattr(lib, "dlclose"):
+            return lib.dlclose
+    except OSError:
+        pass
+    # dlclose not found.
+    return None
+
+
 def get_dll_close():
     """Get dll function to unload DLL."""
     if util.is_windows():
         return ctypes.windll.kernel32.FreeLibrary
     else:
-        dlpath = find_library("c")
-        if dlpath is None:
-            dlpath = find_library("System")
-        elif dlpath is None:
-            # Failed to find the path to stdlib.
-            return None
-
-        try:
-            stdlib = ctypes.CDLL(dlpath)
-            return stdlib.dlclose
-        except OSError:
-            # Failed to load stdlib.
-            return None
+        # Search libc, libdl, and libSystem
+        for lib_name in ["c", "dl", "System"]:
+            dlclose = get_dll_close_from_lib(lib_name)
+            if dlclose is not None:
+                return dlclose
+    # Failed to find dlclose
+    return None
 
 
 def unload_texconv():
@@ -43,7 +53,7 @@ def unload_texconv():
 
     dll_close = get_dll_close()
     if dll_close is None:
-        raise RuntimeError("Failed to unload DLL. Restart Blender if you will remove the addon.")
+        raise RuntimeError("Failed to unload DLL.")
 
     handle = DLL._handle
     dll_close.argtypes = [ctypes.c_void_p]

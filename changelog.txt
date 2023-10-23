@@ -1,3 +1,12 @@
+ver 0.3.3
+- Fixed a crash when closing Blender after exporting BC6 or BC7 textures.
+- Fixed a bug that sRGB formats make textures brighter when exporting.
+- Fixed an error when importing files from some specific directory structures.
+- Fixed a bug that the `Import from a Directory` operation can not count DDS files correctly.
+- Fixed an error when releasing DLL resources on Linux.
+- Made the addon release DLL resources for each operation.
+- Added an error for ARM devices.
+
 ver 0.3.2
 - Fixed an error when importing dds without image editor opened.
 - Fixed an error when changing workspace with file picker opened.

@@ -36,3 +36,7 @@ def is_linux():
 
 def is_mac():
     return get_os_name() == 'Darwin'
+
+
+def is_arm():
+    return 'arm' in platform.machine().lower()

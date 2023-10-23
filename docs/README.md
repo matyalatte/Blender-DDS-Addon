@@ -1,9 +1,8 @@
-# Blender-DDS-Addon v0.3.2
+# Blender-DDS-Addon v0.3.3
 
 [![Github All Releases](https://img.shields.io/github/downloads/matyalatte/Blender-DDS-Addon/total.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![build](https://github.com/matyalatte/Blender-DDS-Addon/actions/workflows/build.yml/badge.svg)
-<a href="https://www.buymeacoffee.com/matyalatteQ" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>  
 
 Blender addon to import and export dds textures  
   
@@ -22,11 +21,9 @@ You can download zip files from [the release page](https://github.com/matyalatte
 
 -   `blender_dds_addon*_Windows.zip` is for Windows.
 -   `blender_dds_addon*_macOS.zip` is for Mac (10.15 or later).
--   `blender_dds_addon*_Linux.zip` is for Ubuntu (20.04 or later).
+-   `blender_dds_addon*_Linux.zip` is for Linux with GLIBC 2.27+ and GLIBCXX 3.4.26+.
 
-> The linux build only supports Ubuntu due to the glibc dependences.  
-> If you want to use it on other linux distributions, you should get the lib or build [Texconv](https://github.com/matyalatte/Texconv-Custom-DLL) by yourself.  
-> (But I don't know if it's possible on your platform.)  
+> The linux build only supports distributions using GLIBC and GLIBCXX.  
 
 ## Getting Started
 
@@ -118,7 +115,7 @@ Here is a list of supported formats.
 
 </details>
 
-## About Non-2D Textures
+## Non-2D Textures
 The addon supports non-2D textures except for partial cubemaps.  
 See wiki pages for the details.  
 

@@ -16,24 +16,34 @@ from . import util
 DLL = None
 
 
+def get_dll_close_from_lib(lib_name):
+    """Return dll function to unlaod DLL if the library has it."""
+    dlpath = find_library(lib_name)
+    if dlpath is None:
+        # DLL not found.
+        return None
+    try:
+        lib = ctypes.CDLL(dlpath)
+        if hasattr(lib, "dlclose"):
+            return lib.dlclose
+    except OSError:
+        pass
+    # dlclose not found.
+    return None
+
+
 def get_dll_close():
     """Get dll function to unload DLL."""
     if util.is_windows():
         return ctypes.windll.kernel32.FreeLibrary
     else:
-        dlpath = find_library("c")
-        if dlpath is None:
-            dlpath = find_library("System")
-        elif dlpath is None:
-            # Failed to find the path to stdlib.
-            return None
-
-        try:
-            stdlib = ctypes.CDLL(dlpath)
-            return stdlib.dlclose
-        except OSError:
-            # Failed to load stdlib.
-            return None
+        # Search libc, libdl, and libSystem
+        for lib_name in ["c", "dl", "System"]:
+            dlclose = get_dll_close_from_lib(lib_name)
+            if dlclose is not None:
+                return dlclose
+    # Failed to find dlclose
+    return None
 
 
 def unload_texconv():
@@ -43,7 +53,7 @@ def unload_texconv():
 
     dll_close = get_dll_close()
     if dll_close is None:
-        raise RuntimeError("Failed to unload DLL. Restart Blender if you will remove the addon.")
+        raise RuntimeError("Failed to unload DLL.")
 
     handle = DLL._handle
     dll_close.argtypes = [ctypes.c_void_p]
@@ -74,13 +84,12 @@ class Texconv:
                 raise RuntimeError(f'This OS ({util.get_os_name()}) is unsupported.')
             dirname = os.path.dirname(file_path)
             dll_path = os.path.join(dirname, dll_name)
-            dll_path2 = os.path.join(os.path.dirname(dirname), dll_name)  # allow ../texconv.dll
+
+            if util.is_arm():
+                raise RuntimeError(f'{dll_name} does NOT support ARM devices')
 
         if not os.path.exists(dll_path):
-            if os.path.exists(dll_path2):
-                dll_path = dll_path2
-            else:
-                raise RuntimeError(f'texconv not found. ({dll_path})')
+            raise RuntimeError(f'texconv not found. ({dll_path})')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
         DLL = self.dll
@@ -176,6 +185,9 @@ class Texconv:
         if image_filter != "LINEAR":
             args += ["-if", image_filter]
 
+        if "SRGB" in dds_fmt:
+            args += ['-srgb']
+
         if ("BC5" in dds_fmt) and invert_normals:
             args += ['-inverty']
 
@@ -203,8 +215,7 @@ class Texconv:
         if out not in ['.', ''] and not os.path.exists(out):
             util.mkdir(out)
 
-        args += ["-y"]
-        args += [os.path.normpath(file)]
+        args += ["-y", "--", os.path.normpath(file)]
 
         args_p = [ctypes.c_wchar_p(arg) for arg in args]
         args_p = (ctypes.c_wchar_p*len(args_p))(*args_p)
@@ -233,7 +244,7 @@ class Texconv:
         out = os.path.dirname(new_file)
         if out not in ['.', ''] and not os.path.exists(out):
             util.mkdir(out)
-        args += ["-y", "-o", new_file, file]
+        args += ["-y", "-o", new_file, "--", file]
 
         args_p = [ctypes.c_wchar_p(arg) for arg in args]
         args_p = (ctypes.c_wchar_p*len(args_p))(*args_p)

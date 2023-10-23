@@ -13,7 +13,7 @@ from bpy_extras.io_utils import ImportHelper
 import numpy as np
 
 from ..directx.dds import DDSHeader, DDS
-from ..directx.texconv import Texconv
+from ..directx.texconv import Texconv, unload_texconv
 from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist, flush_stdout
 from .custom_properties import DDS_FMT_NAMES
 
@@ -128,13 +128,15 @@ def import_dds(context, file):
         space.image = tex
 
 
-def import_dds_rec(context, folder, count=0):
+def import_dds_rec(context, folder):
     """Search a folder recursively, and import found dds files."""
+    count = 0
     for file in sorted(os.listdir(folder)):
-        if os.path.isdir(file):
-            count += import_dds_rec(context, os.path.join(folder, file), count=count)
+        path = os.path.join(folder, file)
+        if os.path.isdir(path):
+            count += import_dds_rec(context, path)
         elif file.split('.')[-1].lower() == "dds":
-            import_dds(context, os.path.join(folder, file))
+            import_dds(context, path)
             count += 1
     return count
 
@@ -182,6 +184,9 @@ class DDS_OT_import_base(Operator):
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
+
+        # release DLL resources
+        unload_texconv()
 
         return ret
 

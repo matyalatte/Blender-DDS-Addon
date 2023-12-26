@@ -28,7 +28,7 @@ jobs:
   test:
     # Most code is from pytest-blender's workflow by mondeja.
     # https://github.com/mondeja/pytest-blender/blob/master/.github/workflows/ci.yml
-    name: Test
+    name: Test-${{ matrix.platform }}-${{ matrix.blender-version }}
     runs-on: ${{ matrix.platform }}
     env:
       pytest-version: '7.1.2'
@@ -37,22 +37,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Test with 2.83, 3.3, and 3.6 on Windows
+          # Test with 2.83, 3.3, 3.6, and 4.0 on Windows
           - platform: windows-latest
-            blender-version: '3.6.5'
-          
+            blender-version: '4.0.2'
+
           - platform: windows-latest
-            blender-version: '3.3.7'
+            blender-version: '3.6.7'
+
+          - platform: windows-latest
+            blender-version: '3.3.14'
           
           - platform: windows-latest
             blender-version: '2.83.20'
           
-          # Test with 3.3 on Unix/Linux systems
+          # Test with 3.6 on Unix/Linux systems
           - platform: ubuntu-latest
-            blender-version: '3.3.7'
+            blender-version: '3.6.7'
           
           - platform: macos-latest
-            blender-version: '3.3.7'
+            blender-version: '3.6.7'
 
     steps:
       - uses: actions/checkout@v3

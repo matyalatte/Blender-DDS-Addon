@@ -251,7 +251,11 @@ class DX10Header(c.LittleEndianStructure):
 
 
 def is_hdr(name: str):
-    return 'BC6' in name or 'FLOAT' in name or 'INT' in name or 'SNORM' in name
+    return 'BC6' in name or 'FLOAT' in name or 'INT' in name
+
+
+def is_signed(name: str):
+    return 'SNORM' in name or 'SF16' in name
 
 
 def convertible_to_tga(name: str):
@@ -389,6 +393,9 @@ class DDSHeader(c.LittleEndianStructure):
 
     def is_int(self):
         return 'INT' in self.dxgi_format.name
+
+    def is_signed(self):
+        return is_signed(self.dxgi_format.name)
 
     def is_canonical(self):
         return self.fourCC not in UNCANONICAL_FOURCC

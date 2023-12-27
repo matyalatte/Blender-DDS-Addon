@@ -9,7 +9,7 @@ from ctypes.util import find_library
 import os
 import tempfile
 
-from .dds import DDSHeader, is_hdr
+from .dds import DDSHeader, is_hdr, is_signed
 from .dxgi_format import DXGI_FORMAT
 from . import util
 
@@ -131,6 +131,9 @@ class Texconv:
             if not dds_header.convertible_to_tga():
                 args += ['-f', 'rgba']
 
+        if dds_header.is_signed():
+            args += '-x2bias'
+
         if dds_header.is_int():
             msg = f'Int format detected. ({dds_header.get_format_as_str()})\n It might not be converted correctly.'
             print(msg)
@@ -139,7 +142,8 @@ class Texconv:
             args += ['-ft', fmt]
 
             if dds_header.is_bc5():
-                args += ['-reconstructz']
+                if not dds_header.is_signed():
+                    args += ['-reconstructz']
                 if invert_normals:
                     args += ['-inverty']
 
@@ -184,6 +188,9 @@ class Texconv:
             args += ['-m', '1']
         if image_filter != "LINEAR":
             args += ["-if", image_filter]
+
+        if is_signed(dds_fmt):
+            args += '-x2bias'
 
         if "SRGB" in dds_fmt:
             args += ['-srgb']

@@ -1,3 +1,6 @@
+ver 0.3.4
+- Fixed a bug that SNORM textures are broken when importing and exporting.
+
 ver 0.3.3
 - Fixed a crash when closing Blender after exporting BC6 or BC7 textures.
 - Fixed a bug that sRGB formats make textures brighter when exporting.

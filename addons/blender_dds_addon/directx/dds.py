@@ -235,8 +235,10 @@ class DX10Header(c.LittleEndianStructure):
     ]
 
     def get_dxgi(self):
-        if self.dxgi_format > DXGI_FORMAT.get_max():
+        if self.dxgi_format not in [fmt.value for fmt in DXGI_FORMAT]:
             raise RuntimeError(f"Unsupported DXGI format detected. ({self.dxgi_format})")
+        if "ASTC" in DXGI_FORMAT(self.dxgi_format).name:
+            raise RuntimeError(f"ASTC textures are not supported. ({self.dxgi_format})")
         return DXGI_FORMAT(self.dxgi_format)
 
     def update(self, dxgi_format, is_cube, is_3d, array_size):
@@ -397,6 +399,13 @@ class DDSHeader(c.LittleEndianStructure):
 
     def is_canonical(self):
         return self.fourCC not in UNCANONICAL_FOURCC
+
+    def is_supported(self):
+        if self.dxgi_format not in [fmt.value for fmt in DXGI_FORMAT]:
+            return False
+        if "ASTC" in DXGI_FORMAT(self.dxgi_format).name:
+            return False
+        return True
 
     def is_partial_cube(self):
         return DDS_CAPS2.is_partial_cube(self.caps2)

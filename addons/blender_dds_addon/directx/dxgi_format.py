@@ -130,6 +130,7 @@ class DXGI_FORMAT(IntEnum):
     P208 = 130
     V208 = 131
     V408 = 132
+    A4B4G4R4_UNORM = 191
 
     # non-official formats
     ASTC_4X4_TYPELESS = 133
@@ -138,14 +139,6 @@ class DXGI_FORMAT(IntEnum):
     @classmethod
     def is_valid_format(cls, fmt_name):
         return fmt_name in cls._member_names_
-
-    @staticmethod
-    def get_max():
-        return 134
-
-    @staticmethod
-    def get_max_canonical():
-        return 132
 
     @staticmethod
     def get_signed(fmt):

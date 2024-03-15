@@ -105,7 +105,7 @@ class Texconv:
 
         dds_header = DDSHeader.read_from_file(file)
 
-        if dds_header.dxgi_format.value > DXGI_FORMAT.get_max_canonical():
+        if not dds_header.is_supported():
             raise RuntimeError(
                 f"DDS converter does NOT support {dds_header.get_format_as_str()}.\n"
                 "Use '.dds' as an export format."

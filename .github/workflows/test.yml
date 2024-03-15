@@ -1,6 +1,9 @@
 name: Test
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -9,12 +12,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.7.x
           architecture: x64
           
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install
         run: pip install flake8 pylint codespell
@@ -42,23 +45,23 @@ jobs:
             blender-version: '4.0.2'
 
           - platform: windows-latest
-            blender-version: '3.6.7'
+            blender-version: '3.6.9'
 
           - platform: windows-latest
-            blender-version: '3.3.14'
+            blender-version: '3.3.16'
           
           - platform: windows-latest
             blender-version: '2.83.20'
           
           # Test with 3.6 on Unix/Linux systems
           - platform: ubuntu-latest
-            blender-version: '3.6.7'
+            blender-version: '3.6.9'
           
           - platform: macos-latest
-            blender-version: '3.6.7'
+            blender-version: '3.6.9'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
         
@@ -79,7 +82,7 @@ jobs:
           cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon/directx
       
       - name: Set up Python v${{ env.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.python-version }}
 
@@ -87,7 +90,7 @@ jobs:
         run: python -m pip install --upgrade pip
         
       - name: Cache Blender ${{ matrix.blender-version }}
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-blender
         with:
           path: |

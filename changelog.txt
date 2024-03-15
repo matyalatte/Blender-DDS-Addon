@@ -1,3 +1,6 @@
+ver 0.3.5
+- Fixed typos
+
 ver 0.3.4
 - Fixed a bug that SNORM textures are broken when importing and exporting.
 

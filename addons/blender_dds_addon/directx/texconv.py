@@ -234,7 +234,7 @@ class Texconv:
         return out
 
     def __cube_to_image(self, file, new_file, args, cubemap_layout="h-cross", verbose=True):
-        """Genarate an image from a cubemap with texassemble."""
+        """Generate an image from a cubemap with texassemble."""
         if cubemap_layout.endswith("-fnz"):
             cubemap_layout = cubemap_layout[:-4]
         args = [cubemap_layout] + args

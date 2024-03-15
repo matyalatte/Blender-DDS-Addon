@@ -33,7 +33,7 @@ def test_unload_dll():
 
 @pytest.mark.parametrize("export_format", ["BC4_UNORM", "B8G8R8A8_UNORM_SRGB", "R16G16B16A16_FLOAT"])
 def test_io(export_format):
-    """Cehck if the addon can import and export dds."""
+    """Check if the addon can import and export dds."""
     tex = import_dds.load_dds(get_test_dds())
     tex = export_dds.save_dds(tex, "saved.dds", export_format)
     os.remove("saved.dds")

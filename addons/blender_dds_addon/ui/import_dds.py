@@ -233,7 +233,7 @@ class DDS_OT_import_dir(DDS_OT_import_base):
 
 
 class DDS_PT_import_panel(bpy.types.Panel):
-    """UI panel for improt function."""
+    """UI panel for import function."""
     bl_label = "Import DDS"
     bl_idname = 'DDS_PT_import_panel'
     bl_space_type = "IMAGE_EDITOR"

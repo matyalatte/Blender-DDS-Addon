@@ -150,8 +150,8 @@ class DXGI_FORMAT(IntEnum):
     @staticmethod
     def get_signed(fmt):
         name = fmt.name
-        splitted = name.split("_")
-        num_type = splitted[-1]
+        name_split = name.split("_")
+        num_type = name_split[-1]
 
         new_num_types = {
             "UNORM": "SNORM",
@@ -159,7 +159,7 @@ class DXGI_FORMAT(IntEnum):
         }
 
         if num_type in new_num_types:
-            name = "_".join(splitted[:-1] + new_num_types[num_type])
+            name = "_".join(name_split[:-1] + new_num_types[num_type])
         else:
             return fmt
 

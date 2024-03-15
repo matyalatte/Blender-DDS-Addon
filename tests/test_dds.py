@@ -73,6 +73,13 @@ def test_io_array(texture_type):
     os.remove("saved.dds")
 
 
+def test_io_array_with_mips():
+    """Test with 2d array that has mipmaps."""
+    tex = import_dds.load_dds(os.path.join("tests", "2d_array_mips.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", texture_type="2d_array")
+    os.remove("saved.dds")
+
+
 @pytest.mark.parametrize("image_filter", ["POINT", "CUBIC"])
 def test_io_filter(image_filter):
     """Test filter options."""

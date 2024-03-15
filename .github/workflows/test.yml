@@ -17,13 +17,13 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Install
-        run: pip install flake8 pylint
+        run: pip install flake8 pylint codespell
         
-      - name: Run flake8
-        run: flake8
-
-      - name: Run pylint
-        run: python for_dev/lint.py --path=addons/blender_dds_addon
+      - name: Run scripts
+        run: |
+          flake8
+          python for_dev/lint.py --path=addons/blender_dds_addon
+          codespell -S ".git,.pytest_cache,external,htmlcov"
 
   test:
     # Most code is from pytest-blender's workflow by mondeja.

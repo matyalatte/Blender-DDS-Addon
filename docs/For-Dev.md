@@ -24,6 +24,13 @@ Then, type `python for_dev\lint.py --path=addons\blender_dds_addon` in `./Blende
 You will get results like `PyLint Passed | Score:...`.  
 The score should be more than 7.  
 
+## Codespell
+
+[Codespell](https://github.com/codespell-project/codespell) is a spell checker for source codes.  
+Install it with `pip install codespell`.  
+Then, type `codespell -S ".git,.pytest_cache,external,htmlcov"`.  
+You should get no messages from codespell.  
+
 ## pytest-blender
 
 [pytest-blender](https://github.com/mondeja/pytest-blender) is a pytest plugin for Blender testing.  

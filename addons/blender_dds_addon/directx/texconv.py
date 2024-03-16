@@ -172,7 +172,8 @@ class Texconv:
         if is_hdr(dds_fmt) and ext != 'hdr':
             raise RuntimeError(f'Use .hdr for HDR textures. ({file})')
         if ('BC6' in dds_fmt or 'BC7' in dds_fmt) and (not util.is_windows()) and (not allow_slow_codec):
-            raise RuntimeError(f'Can NOT use CPU codec for {dds_fmt}. Or enable the "Allow Slow Codec" option.')
+            raise RuntimeError(f'Can NOT export {dds_fmt} textures on this platform.'
+                               ' Or enable the "Allow Slow Codec" option.')
 
         if not DXGI_FORMAT.is_valid_format(dds_fmt):
             raise RuntimeError(f'Not DXGI format. ({dds_fmt})')

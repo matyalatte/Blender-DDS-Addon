@@ -66,7 +66,7 @@ pytest tests\ -svv --blender-executable "%BLENDER_EXE%"
 You can run scripts on remote servers for your repositories.  
 There are 2 workflows for the addon.  
 
-- Test: Run flake8, pylint, and pytest to check your codes.
+- Test: Run flake8, pylint, codespell, and pytest to check your codes.
 - Build: Build Texconv and zip it with python scripts.
 
 See here if you want to use the workflows.  

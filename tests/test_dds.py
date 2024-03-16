@@ -80,6 +80,14 @@ def test_io_array_with_mips():
     os.remove("saved.dds")
 
 
+def test_io_bc7():
+    """Test with BC7 textures."""
+    tex = import_dds.load_dds(os.path.join("tests", "bc7.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "BC7_UNORM",
+                              texture_type="2d", allow_slow_codec=True)
+    os.remove("saved.dds")
+
+
 @pytest.mark.parametrize("image_filter", ["POINT", "CUBIC"])
 def test_io_filter(image_filter):
     """Test filter options."""

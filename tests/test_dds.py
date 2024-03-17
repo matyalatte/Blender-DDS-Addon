@@ -33,7 +33,7 @@ def test_unload_dll():
 
 @pytest.mark.parametrize("export_format", ["BC4_UNORM", "B8G8R8A8_UNORM_SRGB", "R16G16B16A16_FLOAT"])
 def test_io(export_format):
-    """Cehck if the addon can import and export dds."""
+    """Check if the addon can import and export dds."""
     tex = import_dds.load_dds(get_test_dds())
     tex = export_dds.save_dds(tex, "saved.dds", export_format)
     os.remove("saved.dds")
@@ -70,6 +70,21 @@ def test_io_array(texture_type):
     extra_texture_list = [t.texture for t in extra_texture_list]
     tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", texture_type=texture_type,
                               extra_texture_list=extra_texture_list)
+    os.remove("saved.dds")
+
+
+def test_io_array_with_mips():
+    """Test with 2d array that has mipmaps."""
+    tex = import_dds.load_dds(os.path.join("tests", "2d_array_mips.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "BC1_UNORM", texture_type="2d_array")
+    os.remove("saved.dds")
+
+
+def test_io_bc7():
+    """Test with BC7 textures."""
+    tex = import_dds.load_dds(os.path.join("tests", "bc7.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "BC7_UNORM",
+                              texture_type="2d", allow_slow_codec=True)
     os.remove("saved.dds")
 
 

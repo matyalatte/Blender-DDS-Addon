@@ -115,7 +115,7 @@ class DDSCustomProperties(DDSPropBase, PropertyGroup):
     """Properties for dds info."""
     dxgi_format: EnumProperty(
         name='DXGI format',
-        items=[('NONE', 'None', 'Skip this image when excuting the export opration.')] + DDS_FMT_ITEMS,
+        items=[('NONE', 'None', 'Skip this image when executing the export operation.')] + DDS_FMT_ITEMS,
         description="DXGI format for DDS",
         default='NONE'
     )

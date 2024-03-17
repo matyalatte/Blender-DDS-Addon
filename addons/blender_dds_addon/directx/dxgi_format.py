@@ -130,6 +130,7 @@ class DXGI_FORMAT(IntEnum):
     P208 = 130
     V208 = 131
     V408 = 132
+    A4B4G4R4_UNORM = 191
 
     # non-official formats
     ASTC_4X4_TYPELESS = 133
@@ -140,18 +141,10 @@ class DXGI_FORMAT(IntEnum):
         return fmt_name in cls._member_names_
 
     @staticmethod
-    def get_max():
-        return 134
-
-    @staticmethod
-    def get_max_canonical():
-        return 132
-
-    @staticmethod
     def get_signed(fmt):
         name = fmt.name
-        splitted = name.split("_")
-        num_type = splitted[-1]
+        name_split = name.split("_")
+        num_type = name_split[-1]
 
         new_num_types = {
             "UNORM": "SNORM",
@@ -159,7 +152,7 @@ class DXGI_FORMAT(IntEnum):
         }
 
         if num_type in new_num_types:
-            name = "_".join(splitted[:-1] + new_num_types[num_type])
+            name = "_".join(name_split[:-1] + new_num_types[num_type])
         else:
             return fmt
 

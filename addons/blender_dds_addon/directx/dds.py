@@ -135,11 +135,11 @@ class DDS_FLAGS(IntEnum):
 class DDS_CAPS(IntEnum):
     CUBEMAP = 0x8      # DDSCAPS_COMPLEX
     MIPMAP = 0x400008  # DDSCAPS_COMPLEX | DDSCAPS_MIPMAP
-    REQUIERD = 0x1000  # DDSCAPS_TEXTURE
+    REQUIRED = 0x1000  # DDSCAPS_TEXTURE
 
     @staticmethod
     def get_caps(has_mips, is_cube):
-        caps = DDS_CAPS.REQUIERD
+        caps = DDS_CAPS.REQUIRED
         if has_mips:
             caps |= DDS_CAPS.MIPMAP
         if is_cube:
@@ -235,8 +235,10 @@ class DX10Header(c.LittleEndianStructure):
     ]
 
     def get_dxgi(self):
-        if self.dxgi_format > DXGI_FORMAT.get_max():
+        if self.dxgi_format not in [fmt.value for fmt in DXGI_FORMAT]:
             raise RuntimeError(f"Unsupported DXGI format detected. ({self.dxgi_format})")
+        if "ASTC" in DXGI_FORMAT(self.dxgi_format).name:
+            raise RuntimeError(f"ASTC textures are not supported. ({self.dxgi_format})")
         return DXGI_FORMAT(self.dxgi_format)
 
     def update(self, dxgi_format, is_cube, is_3d, array_size):
@@ -322,8 +324,6 @@ class DDSHeader(c.LittleEndianStructure):
             raise RuntimeError("Not DDS file.")
         if head.dx10_header.resource_dimension == 2:
             raise RuntimeError("1D textures are unsupported.")
-        if (head.is_array() or head.is_3d()) and head.has_mips():
-            raise RuntimeError(f"Loaded {head.get_texture_type()} texture has mipmaps. This is unexpected.")
 
         return head
 
@@ -399,6 +399,13 @@ class DDSHeader(c.LittleEndianStructure):
 
     def is_canonical(self):
         return self.fourCC not in UNCANONICAL_FOURCC
+
+    def is_supported(self):
+        if self.dxgi_format not in [fmt.value for fmt in DXGI_FORMAT]:
+            return False
+        if "ASTC" in DXGI_FORMAT(self.dxgi_format).name:
+            return False
+        return True
 
     def is_partial_cube(self):
         return DDS_CAPS2.is_partial_cube(self.caps2)

@@ -316,7 +316,7 @@ class DDS_OT_export_all(DDS_OT_export_base):
 
 
 class DDS_PT_export_panel(bpy.types.Panel):
-    """UI panel for improt function."""
+    """UI panel for export function."""
     bl_label = "Export as DDS"
     bl_idname = 'DDS_PT_export_panel'
     bl_space_type = "IMAGE_EDITOR"

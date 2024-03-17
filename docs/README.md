@@ -1,4 +1,4 @@
-# Blender-DDS-Addon v0.3.4
+# Blender-DDS-Addon v0.3.5
 
 [![Github All Releases](https://img.shields.io/github/downloads/matyalatte/Blender-DDS-Addon/total.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -112,6 +112,7 @@ Here is a list of supported formats.
 * B8G8R8A8_UNORM_SRGB
 * B8G8R8X8_UNORM_SRGB
 * B4G4R4A4_UNORM
+* A4B4G4R4_UNORM
 
 </details>
 

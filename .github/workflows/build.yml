@@ -15,7 +15,7 @@ jobs:
     outputs:
       tag: ${{ steps.check-tag.outputs.tag }}
     steps:
-    
+
       - name: Check tag
         id: check-tag
         run: |
@@ -26,7 +26,7 @@ jobs:
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
         shell: bash
-      
+
       - name: Create Release Draft
         id: create-release
         uses: softprops/action-gh-release@v1
@@ -47,20 +47,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: setup
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: get sal.h (for Unix)
         if: runner.os!='Windows'
         run: bash external/Texconv-Custom-DLL/shell_scripts/get_sal.sh
-        
+
       - name: build dll (for Windows)
         if: runner.os=='Windows'
         run: |
           cd external/Texconv-Custom-DLL/batch_files
           ./build.bat
-      
+
       - name: build shared library (for Unix)
         if: runner.os!='Windows'
         run: |
@@ -75,7 +75,7 @@ jobs:
           cp LICENSE release/${{ env.ZIP_NAME }}
           cp external/Texconv-Custom-DLL/*texconv.* release/${{ env.ZIP_NAME }}/directx
         shell: bash
-      
+
       - name: Archive Release
         uses: thedoctor0/zip-release@master
         with:

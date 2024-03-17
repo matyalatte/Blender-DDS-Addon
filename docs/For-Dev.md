@@ -24,6 +24,13 @@ Then, type `python for_dev\lint.py --path=addons\blender_dds_addon` in `./Blende
 You will get results like `PyLint Passed | Score:...`.  
 The score should be more than 7.  
 
+## Codespell
+
+[Codespell](https://github.com/codespell-project/codespell) is a spell checker for source codes.  
+Install it with `pip install codespell`.  
+Then, type `codespell -S ".git,.pytest_cache,external,htmlcov"`.  
+You should get no messages from codespell.  
+
 ## pytest-blender
 
 [pytest-blender](https://github.com/mondeja/pytest-blender) is a pytest plugin for Blender testing.  
@@ -59,7 +66,7 @@ pytest tests\ -svv --blender-executable "%BLENDER_EXE%"
 You can run scripts on remote servers for your repositories.  
 There are 2 workflows for the addon.  
 
-- Test: Run flake8, pylint, and pytest to check your codes.
+- Test: Run flake8, pylint, codespell, and pytest to check your codes.
 - Build: Build Texconv and zip it with python scripts.
 
 See here if you want to use the workflows.  

@@ -5,7 +5,7 @@ import platform
 
 
 def mkdir(directory):
-    """Make dirctory."""
+    """Make directory."""
     os.makedirs(directory, exist_ok=True)
 
 

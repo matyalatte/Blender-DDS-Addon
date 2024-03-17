@@ -1,6 +1,9 @@
 name: Test
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -9,21 +12,21 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.7.x
           architecture: x64
-          
-      - uses: actions/checkout@v3
-      
-      - name: Install
-        run: pip install flake8 pylint
-        
-      - name: Run flake8
-        run: flake8
 
-      - name: Run pylint
-        run: python for_dev/lint.py --path=addons/blender_dds_addon
+      - uses: actions/checkout@v4
+
+      - name: Install
+        run: pip install flake8 pylint codespell
+
+      - name: Run scripts
+        run: |
+          flake8
+          python for_dev/lint.py --path=addons/blender_dds_addon
+          codespell -S ".git,.pytest_cache,external,htmlcov"
 
   test:
     # Most code is from pytest-blender's workflow by mondeja.
@@ -42,52 +45,52 @@ jobs:
             blender-version: '4.0.2'
 
           - platform: windows-latest
-            blender-version: '3.6.7'
+            blender-version: '3.6.9'
 
           - platform: windows-latest
-            blender-version: '3.3.14'
-          
+            blender-version: '3.3.16'
+
           - platform: windows-latest
             blender-version: '2.83.20'
-          
+
           # Test with 3.6 on Unix/Linux systems
           - platform: ubuntu-latest
-            blender-version: '3.6.7'
-          
+            blender-version: '3.6.9'
+
           - platform: macos-latest
-            blender-version: '3.6.7'
+            blender-version: '3.6.9'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-        
+
       - name: get sal.h (for Unix)
         if: runner.os!='Windows'
         run: bash external/Texconv-Custom-DLL/shell_scripts/get_sal.sh
-        
+
       - name: build dll (for Windows)
         if: runner.os=='Windows'
         run: |
           external/Texconv-Custom-DLL/batch_files/build.bat
           cp external/Texconv-Custom-DLL/texconv.dll addons/blender_dds_addon/directx
-      
+
       - name: build shared library (for Unix)
         if: runner.os!='Windows'
         run: |
           bash external/Texconv-Custom-DLL/shell_scripts/build.sh
           cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon/directx
-      
+
       - name: Set up Python v${{ env.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ env.python-version }}
 
       - name: Upgrade PIP
         run: python -m pip install --upgrade pip
-        
+
       - name: Cache Blender ${{ matrix.blender-version }}
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: cache-blender
         with:
           path: |
@@ -105,7 +108,7 @@ jobs:
           python -m pip list
           blender-downloader ${{ matrix.blender-version }} --extract --remove-compressed --print-blender-executable --quiet | Out-File -FilePath _blender-executable-path.txt
           get-content _blender-executable-path.txt
-        
+
       # Download Blender on Linux and MacOS
       - name: Download Blender ${{ matrix.blender-version }}
         if: |
@@ -117,7 +120,7 @@ jobs:
           python -m pip list
           printf "%s" "$(blender-downloader ${{ matrix.blender-version }} --extract --remove-compressed --print-blender-executable --quiet)" > _blender-executable-path.txt
           cat _blender-executable-path.txt
-          
+
       # Install dependencies on Windows
       - name: Install dependencies for Windows
         if: runner.os == 'Windows'

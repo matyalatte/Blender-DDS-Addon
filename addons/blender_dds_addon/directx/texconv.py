@@ -105,7 +105,7 @@ class Texconv:
 
         dds_header = DDSHeader.read_from_file(file)
 
-        if dds_header.dxgi_format.value > DXGI_FORMAT.get_max_canonical():
+        if not dds_header.is_supported():
             raise RuntimeError(
                 f"DDS converter does NOT support {dds_header.get_format_as_str()}.\n"
                 "Use '.dds' as an export format."
@@ -172,7 +172,8 @@ class Texconv:
         if is_hdr(dds_fmt) and ext != 'hdr':
             raise RuntimeError(f'Use .hdr for HDR textures. ({file})')
         if ('BC6' in dds_fmt or 'BC7' in dds_fmt) and (not util.is_windows()) and (not allow_slow_codec):
-            raise RuntimeError(f'Can NOT use CPU codec for {dds_fmt}. Or enable the "Allow Slow Codec" option.')
+            raise RuntimeError(f'Can NOT export {dds_fmt} textures on this platform.'
+                               ' Or enable the "Allow Slow Codec" option.')
 
         if not DXGI_FORMAT.is_valid_format(dds_fmt):
             raise RuntimeError(f'Not DXGI format. ({dds_fmt})')
@@ -234,7 +235,7 @@ class Texconv:
         return out
 
     def __cube_to_image(self, file, new_file, args, cubemap_layout="h-cross", verbose=True):
-        """Genarate an image from a cubemap with texassemble."""
+        """Generate an image from a cubemap with texassemble."""
         if cubemap_layout.endswith("-fnz"):
             cubemap_layout = cubemap_layout[:-4]
         args = [cubemap_layout] + args

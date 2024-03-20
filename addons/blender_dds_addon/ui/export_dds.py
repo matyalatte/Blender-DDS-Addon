@@ -14,6 +14,7 @@ import numpy as np
 
 from ..directx.dds import is_hdr, DDS
 from ..directx.texconv import Texconv, unload_texconv
+from ..astcenc.astcenc import Astcenc, unload_astcenc
 from .bpy_util import save_texture, dds_properties_exist, get_image_editor_space, flush_stdout
 from .texture_list import draw_texture_list
 
@@ -24,7 +25,8 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
              texture_type="2d",
              cubemap_layout='h-cross',
              extra_texture_list=[],
-             texconv=None):
+             texconv=None,
+             astcenc=None):
     """Export a texture as DDS.
 
     Args:
@@ -38,6 +40,7 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         cubemap_layout (string): Layout for cubemap faces.
         extra_texture_list (list[bpy.types.Image]): extra textures for non-2D formats.
         texconv (Texconv): Texture converter for dds.
+        astcenc (Astcenc): Astc converter.
 
     Returns:
         tex (bpy.types.Image): saved texture
@@ -45,13 +48,24 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
     is_cube = "cube" in texture_type
     is_array = "array" in texture_type
     is_3d = texture_type == "volume"
+    is_astc = "ASTC" in dds_fmt
+    is_srgb = "SRGB" in dds_fmt
+
+    if is_astc:
+        if not no_mip:
+            raise RuntimeError("Mipmap generation for ASTC is not supported yet.")
+        astc_fmt = dds_fmt
+        if is_srgb:
+            dds_fmt = "B8G8R8A8_UNORM_SRGB"
+        else:
+            dds_fmt = "B8G8R8A8_UNORM"
 
     # Check color space
     color_space = tex.colorspace_settings.name
-    if 'SRGB' in dds_fmt and color_space != 'sRGB':
+    if is_srgb and color_space != 'sRGB':
         print("Warning: Specified DXGI format uses sRGB as a color space,"
               f"but the texture uses {color_space} in Blender")
-    elif 'SRGB' not in dds_fmt and color_space not in ['Non-Color', 'Raw']:
+    elif (not is_srgb) and color_space not in ['Non-Color', 'Raw']:
         print("Warning: Specified DXGI format does not use any color space conversion,"
               f"but the texture uses {color_space} in Blender")
 
@@ -134,7 +148,10 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
 
     try:
         temp_tex = None
-        texconv = Texconv()
+        if texconv is None:
+                texconv = Texconv()
+        if astcenc is None:
+            astcenc = Astcenc()
 
         with tempfile.TemporaryDirectory() as temp_dir:
             dds_path_list = []
@@ -150,9 +167,15 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
             if (is_array or is_3d) and len(dds_path_list) > 1:
                 dds_list = [DDS.load(dds_path) for dds_path in dds_path_list]
                 dds = DDS.assemble(dds_list, is_array=is_array)
-                dds.save(file)
-            else:
-                shutil.copyfile(dds_path_list[0], file)
+                dds.save(dds_path_list[0])
+
+            dds = DDS.load(dds_path_list[0])
+            if (is_astc):
+                block_parsed = astc_fmt.split("_")[1].split("X")
+                block_x, block_y = [int(s) for s in block_parsed]
+                astcenc.config_init(block_x, block_y)
+                dds.compress_astc(astcenc, astc_fmt)
+            dds.save(file)
 
     except Exception as e:
         if temp_tex is not None:
@@ -162,7 +185,7 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
     return tex
 
 
-def export_as_dds(context, tex, file):
+def export_as_dds(context, tex, file, texconv=None, astcenc=None):
     dds_options = context.scene.dds_options
 
     if dds_properties_exist():
@@ -192,7 +215,8 @@ def export_as_dds(context, tex, file):
              allow_slow_codec=dds_options.allow_slow_codec,
              texture_type=texture_type,
              cubemap_layout=cubemap_layout,
-             extra_texture_list=extra_texture_list)
+             extra_texture_list=extra_texture_list,
+             texconv=texconv, astcenc=astcenc)
 
 
 def put_export_options(context, layout):
@@ -222,6 +246,9 @@ class DDS_OT_export_base(Operator):
         put_export_options(context, layout)
 
     def execute_base(self, context, file=None, directory=None, is_dir=False):
+        texconv = Texconv()
+        astcenc = Astcenc()
+
         try:
             start_time = time.time()
 
@@ -235,7 +262,7 @@ class DDS_OT_export_base(Operator):
                     if name[-4:] != ".dds":
                         name += ".dds"
                     file = os.path.join(directory, name)
-                    export_as_dds(context, tex, file)
+                    export_as_dds(context, tex, file, texconv=texconv, astcenc=astcenc)
                     flush_stdout()
                     count += 1
             else:
@@ -248,7 +275,7 @@ class DDS_OT_export_base(Operator):
                     raise RuntimeError('An image should be selected on Image Editor.')
                 if dds_properties_exist() and tex.dds_props.dxgi_format == "NONE":
                     raise RuntimeError("DXGI format should NOT be 'None'.")
-                export_as_dds(context, tex, file)
+                export_as_dds(context, tex, file, texconv=texconv, astcenc=astcenc)
                 count = 1
 
             elapsed_s = f'{(time.time() - start_time):.2f}s'
@@ -269,6 +296,7 @@ class DDS_OT_export_base(Operator):
 
         # release DLL resources
         unload_texconv()
+        unload_astcenc()
 
         return ret
 

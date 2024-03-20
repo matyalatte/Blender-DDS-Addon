@@ -14,11 +14,13 @@ import numpy as np
 
 from ..directx.dds import DDSHeader, DDS
 from ..directx.texconv import Texconv, unload_texconv
+from ..astcenc.astcenc import Astcenc, unload_astcenc
 from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist, flush_stdout
 from .custom_properties import DDS_FMT_NAMES
 
 
-def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None):
+def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
+             texconv=None, astcenc=None):
     """Import a texture form .dds file.
 
     Args:
@@ -26,6 +28,7 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
         invert_normals (bool): Flip y axis if the texture is normal map.
         cubemap_layout (string): Layout for cubemap faces.
         texconv (Texconv): Texture converter for dds.
+        astcenc (Astcenc): Astc converter.
 
     Returns:
         tex (bpy.types.Image): loaded texture
@@ -38,8 +41,17 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
 
             if texconv is None:
                 texconv = Texconv()
+            if astcenc is None:
+                astcenc = Astcenc()
 
             dds_header = DDSHeader.read_from_file(temp)
+
+            if dds_header.is_astc():
+                block_x, block_y = dds_header.get_astc_block_size()
+                astcenc.config_init(block_x, block_y)
+                dds = DDS.load(temp)
+                dds.decompress_astc(astcenc)
+                dds.save(temp)
 
             # Check dxgi_format
             if dds_header.is_srgb():
@@ -118,17 +130,18 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
     return tex_list[0]
 
 
-def import_dds(context, file):
+def import_dds(context, file, texconv=None, astcenc=None):
     """Import a file."""
     space = get_image_editor_space(context)
     dds_options = context.scene.dds_options
     tex = load_dds(file, invert_normals=dds_options.invert_normals,
-                   cubemap_layout=dds_options.cubemap_layout)
+                   cubemap_layout=dds_options.cubemap_layout,
+                   texconv=texconv, astcenc=astcenc)
     if space:
         space.image = tex
 
 
-def import_dds_rec(context, folder):
+def import_dds_rec(context, folder, texconv=None, astcenc=None):
     """Search a folder recursively, and import found dds files."""
     count = 0
     for file in sorted(os.listdir(folder)):
@@ -136,7 +149,7 @@ def import_dds_rec(context, folder):
         if os.path.isdir(path):
             count += import_dds_rec(context, path)
         elif file.split('.')[-1].lower() == "dds":
-            import_dds(context, path)
+            import_dds(context, path, texconv=texconv, astcenc=astcenc)
             count += 1
     return count
 
@@ -157,16 +170,21 @@ class DDS_OT_import_base(Operator):
         if directory is None:
             raise RuntimeError('"self.directory" is not specified. This is unexpected.')
 
+        texconv = Texconv()
+        astcenc = Astcenc()
+
         try:
             start_time = time.time()
             if is_dir:
                 # For DDS_OT_import_dir
-                count = import_dds_rec(context, directory)
+                count = import_dds_rec(context, directory,
+                                       texconv=texconv, astcenc=astcenc)
             else:
                 # For DDS_OT_import_dds
                 count = 0
                 for _, file in enumerate(files):
-                    import_dds(context, os.path.join(directory, file.name))
+                    import_dds(context, os.path.join(directory, file.name),
+                               texconv=texconv, astcenc=astcenc)
                     flush_stdout()
                     count += 1
             elapsed_s = f'{(time.time() - start_time):.2f}s'
@@ -187,6 +205,7 @@ class DDS_OT_import_base(Operator):
 
         # release DLL resources
         unload_texconv()
+        unload_astcenc()
 
         return ret
 

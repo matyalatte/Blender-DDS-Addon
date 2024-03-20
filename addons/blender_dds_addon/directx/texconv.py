@@ -16,42 +16,12 @@ from . import util
 DLL = None
 
 
-def get_dll_close_from_lib(lib_name):
-    """Return dll function to unlaod DLL if the library has it."""
-    dlpath = find_library(lib_name)
-    if dlpath is None:
-        # DLL not found.
-        return None
-    try:
-        lib = ctypes.CDLL(dlpath)
-        if hasattr(lib, "dlclose"):
-            return lib.dlclose
-    except OSError:
-        pass
-    # dlclose not found.
-    return None
-
-
-def get_dll_close():
-    """Get dll function to unload DLL."""
-    if util.is_windows():
-        return ctypes.windll.kernel32.FreeLibrary
-    else:
-        # Search libc, libdl, and libSystem
-        for lib_name in ["c", "dl", "System"]:
-            dlclose = get_dll_close_from_lib(lib_name)
-            if dlclose is not None:
-                return dlclose
-    # Failed to find dlclose
-    return None
-
-
 def unload_texconv():
     global DLL
     if DLL is None:
         return
 
-    dll_close = get_dll_close()
+    dll_close = util.get_dll_close()
     if dll_close is None:
         raise RuntimeError("Failed to unload DLL.")
 
@@ -105,10 +75,9 @@ class Texconv:
 
         dds_header = DDSHeader.read_from_file(file)
 
-        if not dds_header.is_supported():
+        if not dds_header.is_official():
             raise RuntimeError(
                 f"DDS converter does NOT support {dds_header.get_format_as_str()}.\n"
-                "Use '.dds' as an export format."
             )
 
         if dds_header.is_3d() or dds_header.is_array():

@@ -1,3 +1,6 @@
 [submodule "external/Texconv-Custom-DLL"]
 	path = external/Texconv-Custom-DLL
 	url = https://github.com/matyalatte/Texconv-Custom-DLL.git
+[submodule "external/astc-encoder"]
+	path = external/astc-encoder
+	url = https://github.com/ARM-software/astc-encoder.git

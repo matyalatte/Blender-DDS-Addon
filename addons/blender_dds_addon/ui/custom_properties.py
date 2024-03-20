@@ -24,7 +24,7 @@ def get_alt_fmt(fmt):
 
 
 def is_supported(fmt):
-    return ('TYPELESS' not in fmt) and ('ASTC' not in fmt) and\
+    return ('TYPELESS' not in fmt) and\
            (len(fmt) > 4) and (fmt not in ["UNKNOWN", "OPAQUE_420"])
 
 

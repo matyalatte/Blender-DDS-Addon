@@ -9,6 +9,7 @@ Notes:
 
 import ctypes as c
 from enum import IntEnum
+import math
 import os
 
 from . import util
@@ -37,11 +38,6 @@ UNCANONICAL_FOURCC = [
     b"ATCA",
     b"ATCE",
     b"ATCI",
-    b"AS44",
-    b"AS55",
-    b"AS66",
-    b"AS85",
-    b"AS86",
     b"AS:5"
 ]
 
@@ -237,8 +233,6 @@ class DX10Header(c.LittleEndianStructure):
     def get_dxgi(self):
         if self.dxgi_format not in [fmt.value for fmt in DXGI_FORMAT]:
             raise RuntimeError(f"Unsupported DXGI format detected. ({self.dxgi_format})")
-        if "ASTC" in DXGI_FORMAT(self.dxgi_format).name:
-            raise RuntimeError(f"ASTC textures are not supported. ({self.dxgi_format})")
         return DXGI_FORMAT(self.dxgi_format)
 
     def update(self, dxgi_format, is_cube, is_3d, array_size):
@@ -296,7 +290,7 @@ class DDSHeader(c.LittleEndianStructure):
         self.mipmap_num = 1
         self.pixel_format = DDSPixelFormat()
         self.reserved = (c.c_uint32 * 9)((0) * 9)
-        self.tool_name = b"UEDT"
+        self.tool_name = b"BLND"
         self.null = 0
         self.reserved2 = (c.c_uint32*3)(0, 0, 0)
         self.dx10_header = DX10Header()
@@ -354,6 +348,7 @@ class DDSHeader(c.LittleEndianStructure):
             self.pitch_or_linear_size = int(self.width * bpp)
         self.caps = DDS_CAPS.get_caps(has_mips, is_cube)
         self.caps2 = DDS_CAPS2.get_caps2(is_cube, is_3d)
+
         self.dx10_header.update(self.dxgi_format, is_cube, is_3d, array_size)
         self.pixel_format = DDSPixelFormat()
 
@@ -400,12 +395,13 @@ class DDSHeader(c.LittleEndianStructure):
     def is_canonical(self):
         return self.fourCC not in UNCANONICAL_FOURCC
 
-    def is_supported(self):
-        if self.dxgi_format not in [fmt.value for fmt in DXGI_FORMAT]:
-            return False
-        if "ASTC" in DXGI_FORMAT(self.dxgi_format).name:
+    def is_official(self):
+        if "ASTC" in self.get_format_as_str():
             return False
         return True
+
+    def is_astc(self):
+        return "ASTC" in self.get_format_as_str()
 
     def is_partial_cube(self):
         return DDS_CAPS2.is_partial_cube(self.caps2)
@@ -444,6 +440,17 @@ class DDSHeader(c.LittleEndianStructure):
             t += "_array"
         return t
 
+    def get_astc_block_size(self):
+        fmt = self.get_format_as_str()
+        if ("ASTC" not in fmt):
+            return None
+        block_parsed = fmt.split("_")[1].split("X")
+        return [int(s) for s in block_parsed]
+
+    def change_dxgi_format(self, dxgi_format):
+        self.pixel_format = DDSPixelFormat()
+        self.dxgi_format = dxgi_format
+        self.update(self.depth, self.get_array_size())
 
 class DDS:
     def __init__(self, header, slices=None):
@@ -500,3 +507,36 @@ class DDS:
                 raise RuntimeError("Failed to assemble dds files. Texture sizes should be the same")
         slice_bin_list = sum([dds.slice_bin_list for dds in dds_list], [])
         return DDS(header, slice_bin_list)
+
+    def remove_astc_mips(self):
+        if (not self.header.is_astc()):
+            raise RuntimeError("This operation only supports ASTC textures. (remove_astc_mips)")
+        block_x, block_y = self.header.get_astc_block_size()
+        w, h = self.header.width, self.header.height
+        bin_size = math.ceil(w / block_x) * math.ceil(h / block_y) * 16
+        self.header.mipmap_num = 1
+        self.slice_bin_list = [b[:bin_size] for b in self.slice_bin_list]
+
+    def decompress_astc(self, astcenc):
+        self.remove_astc_mips()
+        w, h = self.header.width, self.header.height
+        slices = self.slice_bin_list
+        new_slices = [astcenc.decompress_image(w, h, b) for b in slices]
+        self.slice_bin_list = new_slices
+        self.header.change_dxgi_format(DXGI_FORMAT.B8G8R8A8_UNORM)
+
+    def remove_bgra_mips(self):
+        if ("B8G8R8A8" not in self.header.get_format_as_str()):
+            raise RuntimeError("This operation only supports B8G8R8A8 textures. (remove_bgra_mips)")
+        w, h = self.header.width, self.header.height
+        bin_size = w * h * 4
+        self.header.mipmap_num = 1
+        self.slice_bin_list = [b[:bin_size] for b in self.slice_bin_list]
+
+    def compress_astc(self, astcenc, astc_fmt):
+        w, h = self.header.width, self.header.height
+        slices = self.slice_bin_list
+        new_slices = [astcenc.compress_image(w, h, b) for b in slices]
+        self.slice_bin_list = new_slices
+        dxgi_format = DXGI_FORMAT[astc_fmt]
+        self.header.change_dxgi_format(dxgi_format)

@@ -1,3 +1,10 @@
+"""Texture converter for ASTC formats.
+
+Notes:
+    You need to build dll from https://github.com/ARM-software/astc-encoder.
+    And put the dll in the same directory as astcenc.py.
+"""
+
 import ctypes
 from ctypes.util import find_library
 import math
@@ -48,20 +55,11 @@ class Astcenc:
             return
 
         if dll_path is None:
-            file_path = os.path.realpath(__file__)
-            if util.is_windows():
-                dll_name = "astcenc-sse2-shared.dll"
-            elif util.is_mac():
-                dll_name = "libastcenc.dylib"
-            elif util.is_linux():
-                dll_name = "libastcenc.so"
-            else:
-                raise RuntimeError(f'This OS ({util.get_os_name()}) is unsupported.')
-            dirname = os.path.dirname(file_path)
-            dll_path = os.path.join(dirname, dll_name)
+            dirname = os.path.dirname(os.path.realpath(__file__))
+            dll_path = util.find_local_library(dirname, "astcenc")
 
-        if not os.path.exists(dll_path):
-            raise RuntimeError(f'astcenc not found. ({dll_path})')
+        if (dll_path is None) or (not os.path.exists(dll_path)):
+            raise RuntimeError(f'astcenc not found.')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
         DLL = self.dll

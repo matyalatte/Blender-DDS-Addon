@@ -43,23 +43,17 @@ class Texconv:
             return
 
         if dll_path is None:
-            file_path = os.path.realpath(__file__)
-            if util.is_windows():
-                dll_name = "texconv.dll"
-            elif util.is_mac():
-                dll_name = "libtexconv.dylib"
-            elif util.is_linux():
-                dll_name = "libtexconv.so"
-            else:
-                raise RuntimeError(f'This OS ({util.get_os_name()}) is unsupported.')
-            dirname = os.path.dirname(file_path)
-            dll_path = os.path.join(dirname, dll_name)
+            dirname = os.path.dirname(os.path.realpath(__file__))
+            dll_path = util.find_local_library(dirname, "texconv")
 
-            if util.is_arm():
-                raise RuntimeError(f'{dll_name} does NOT support ARM devices')
+        if (dll_path is None) or (not os.path.exists(dll_path)):
+            raise RuntimeError(f'texconv not found.')
+
+        if util.is_arm():
+            raise RuntimeError('texconv does NOT support ARM devices')
 
         if not os.path.exists(dll_path):
-            raise RuntimeError(f'texconv not found. ({dll_path})')
+            raise RuntimeError(f'texconv not found.')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
         DLL = self.dll

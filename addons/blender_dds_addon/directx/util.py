@@ -71,3 +71,13 @@ def get_dll_close():
                 return dlclose
     # Failed to find dlclose
     return None
+
+
+def find_local_library(dir, lib_name):
+    for f in os.listdir(dir):
+        name, ext = os.path.splitext(f)
+        if ext not in [".dll", ".dylib", ".so"]:
+            continue
+        if name.startswith(lib_name) or name.startswith("lib"  + lib_name):
+            return os.path.join(dir, f)
+    return None

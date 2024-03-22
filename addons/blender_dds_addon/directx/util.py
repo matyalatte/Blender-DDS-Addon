@@ -45,7 +45,7 @@ def is_arm():
 
 def get_dll_close_from_lib(lib_name):
     """Return dll function to unlaod DLL if the library has it."""
-    dlpath = find_library(lib_name)
+    dlpath = ctypes.util.find_library(lib_name)
     if dlpath is None:
         # DLL not found.
         return None

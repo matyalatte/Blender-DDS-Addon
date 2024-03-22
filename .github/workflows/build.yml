@@ -29,7 +29,7 @@ jobs:
 
       - name: Create Release Draft
         id: create-release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.check-tag.outputs.tag }}
           name: ${{ steps.check-tag.outputs.tag }}
@@ -58,14 +58,18 @@ jobs:
       - name: build dll (for Windows)
         if: runner.os=='Windows'
         run: |
-          cd external/Texconv-Custom-DLL/batch_files
-          ./build.bat
+          external/Texconv-Custom-DLL/batch_files/build_without_vcruntime.bat
+          cp external/Texconv-Custom-DLL/texconv.dll addons/blender_dds_addon/directx
+          external/build_astcenc.bat
+          cp external/astc-encoder/astcenc-sse2-shared.dll addons/blender_dds_addon/astcenc
 
       - name: build shared library (for Unix)
         if: runner.os!='Windows'
         run: |
-          cd external/Texconv-Custom-DLL/shell_scripts
-          bash build.sh
+          bash external/Texconv-Custom-DLL/shell_scripts/build_universal.sh
+          cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon/directx
+          bash external/build_astcenc_${{ runner.os }}.sh
+          cp external/astc-encoder/libastcenc* addons/blender_dds_addon/astcenc
 
       - name: Copy files
         run: |
@@ -73,7 +77,6 @@ jobs:
           cp -r addons/${{ env.ZIP_NAME }} release
           cp changelog.txt release/${{ env.ZIP_NAME }}
           cp LICENSE release/${{ env.ZIP_NAME }}
-          cp external/Texconv-Custom-DLL/*texconv.* release/${{ env.ZIP_NAME }}/directx
         shell: bash
 
       - name: Archive Release

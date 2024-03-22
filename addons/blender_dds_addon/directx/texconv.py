@@ -49,12 +49,6 @@ class Texconv:
         if (dll_path is None) or (not os.path.exists(dll_path)):
             raise RuntimeError(f'texconv not found.')
 
-        if util.is_arm():
-            raise RuntimeError('texconv does NOT support ARM devices')
-
-        if not os.path.exists(dll_path):
-            raise RuntimeError(f'texconv not found.')
-
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
         DLL = self.dll
 

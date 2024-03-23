@@ -1,7 +1,7 @@
 @echo off
 
-REM Builds texconv.dll with CMake and Visual Studio.
-REM texconv.dll will be generated in ..\
+REM Builds astcenc-sse2-shared.dll with CMake and Visual Studio.
+REM astcenc-sse2-shared.dll will be generated in ..\
 
 set VS_VERSION=Visual Studio 17 2022
 

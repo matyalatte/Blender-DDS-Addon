@@ -52,8 +52,6 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
     is_srgb = "SRGB" in dds_fmt
 
     if is_astc:
-        if not no_mip:
-            raise RuntimeError("Mipmap generation for ASTC is not supported yet.")
         astc_fmt = dds_fmt
         if is_srgb:
             dds_fmt = "B8G8R8A8_UNORM_SRGB"
@@ -171,9 +169,6 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
 
             dds = DDS.load(dds_path_list[0])
             if (is_astc):
-                block_parsed = astc_fmt.split("_")[1].split("X")
-                block_x, block_y = [int(s) for s in block_parsed]
-                astcenc.config_init(block_x, block_y)
                 dds.compress_astc(astcenc, astc_fmt)
             dds.save(file)
 

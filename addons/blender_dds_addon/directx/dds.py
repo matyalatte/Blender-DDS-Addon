@@ -440,12 +440,43 @@ class DDSHeader(c.LittleEndianStructure):
             t += "_array"
         return t
 
-    def get_astc_block_size(self):
+    def get_block_size(self):
         fmt = self.get_format_as_str()
-        if ("ASTC" not in fmt):
-            return None
-        block_parsed = fmt.split("_")[1].split("X")
-        return [int(s) for s in block_parsed]
+        if ("ASTC" in fmt):
+            block_parsed = fmt.split("_")[1].split("X")
+            return [int(s) for s in block_parsed]
+        if ("BC" in fmt):
+            return [4, 4]
+        return [1, 1]
+
+    def get_byte_per_block(self):
+        fmt = self.get_format_as_str()
+        if ("ASTC" in fmt):
+            return 16
+        if ("B8G8R8A8" in fmt):
+            return 4
+        raise RuntimeError(f"get_byte_per_block() does not support {fmt}.")
+
+    def get_mip_sizes(self):
+        """Calculate texture size and binary size of mipmaps"""
+        mipmap_sizes = []
+        slice_size = 0
+        width, height = self.width, self.height
+        block_x, block_y = self.get_block_size()
+        byte_per_block = self.get_byte_per_block()
+        bin_pos = 0
+
+        for i in range(self.mipmap_num):
+            block_count_x = math.ceil(width / block_x)
+            block_count_y = math.ceil(height / block_y)
+
+            bin_size = block_count_x * block_count_y * byte_per_block
+            mipmap_sizes.append([width, height, bin_pos, bin_size])
+            bin_pos += bin_size
+            width, height = width // 2, height // 2
+            width, height = max(width, 1), max(height, 1)
+
+        return mipmap_sizes
 
     def change_dxgi_format(self, dxgi_format):
         self.pixel_format = DDSPixelFormat()
@@ -508,35 +539,40 @@ class DDS:
         slice_bin_list = sum([dds.slice_bin_list for dds in dds_list], [])
         return DDS(header, slice_bin_list)
 
-    def remove_astc_mips(self):
-        if (not self.header.is_astc()):
-            raise RuntimeError("This operation only supports ASTC textures. (remove_astc_mips)")
-        block_x, block_y = self.header.get_astc_block_size()
+    def remove_mips(self):
+        block_x, block_y = self.header.get_block_size()
         w, h = self.header.width, self.header.height
-        bin_size = math.ceil(w / block_x) * math.ceil(h / block_y) * 16
+        bin_size = math.ceil(w / block_x) * math.ceil(h / block_y) * self.header.get_byte_per_block()
         self.header.mipmap_num = 1
         self.slice_bin_list = [b[:bin_size] for b in self.slice_bin_list]
 
     def decompress_astc(self, astcenc):
-        self.remove_astc_mips()
-        w, h = self.header.width, self.header.height
+        block_x, block_y = self.header.get_block_size()
+        astcenc.config_init(block_x, block_y)
+
         slices = self.slice_bin_list
-        new_slices = [astcenc.decompress_image(w, h, b) for b in slices]
+
+        mipmap_sizes = self.header.get_mip_sizes()
+        new_slices = []
+        for b in slices:
+            new_mips = [astcenc.decompress_image(w, h, b[pos: pos + size]) for w, h, pos, size in mipmap_sizes]
+            new_bin = b''.join(new_mips)
+            new_slices.append(new_bin)
         self.slice_bin_list = new_slices
         self.header.change_dxgi_format(DXGI_FORMAT.B8G8R8A8_UNORM)
 
-    def remove_bgra_mips(self):
-        if ("B8G8R8A8" not in self.header.get_format_as_str()):
-            raise RuntimeError("This operation only supports B8G8R8A8 textures. (remove_bgra_mips)")
-        w, h = self.header.width, self.header.height
-        bin_size = w * h * 4
-        self.header.mipmap_num = 1
-        self.slice_bin_list = [b[:bin_size] for b in self.slice_bin_list]
-
     def compress_astc(self, astcenc, astc_fmt):
-        w, h = self.header.width, self.header.height
+        block_parsed = astc_fmt.split("_")[1].split("X")
+        block_x, block_y = [int(s) for s in block_parsed]
+        astcenc.config_init(block_x, block_y)
+
         slices = self.slice_bin_list
-        new_slices = [astcenc.compress_image(w, h, b) for b in slices]
+        mipmap_sizes = self.header.get_mip_sizes()
+        new_slices = []
+        for b in slices:
+            new_mips = [astcenc.compress_image(w, h, b[pos: pos + size]) for w, h, pos, size in mipmap_sizes]
+            new_bin = b''.join(new_mips)
+            new_slices.append(new_bin)
         self.slice_bin_list = new_slices
         dxgi_format = DXGI_FORMAT[astc_fmt]
         self.header.change_dxgi_format(dxgi_format)

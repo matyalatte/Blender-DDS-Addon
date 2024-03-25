@@ -47,9 +47,8 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
             dds_header = DDSHeader.read_from_file(temp)
 
             if dds_header.is_astc():
-                block_x, block_y = dds_header.get_astc_block_size()
-                astcenc.config_init(block_x, block_y)
                 dds = DDS.load(temp)
+                dds.remove_mips()
                 dds.decompress_astc(astcenc)
                 dds.save(temp)
 

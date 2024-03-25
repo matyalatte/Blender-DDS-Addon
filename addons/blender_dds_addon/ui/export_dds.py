@@ -2,7 +2,6 @@
 
 import os
 import time
-import shutil
 import tempfile
 import traceback
 
@@ -147,7 +146,7 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
     try:
         temp_tex = None
         if texconv is None:
-                texconv = Texconv()
+            texconv = Texconv()
         if astcenc is None:
             astcenc = Astcenc()
 

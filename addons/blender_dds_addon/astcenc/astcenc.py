@@ -6,18 +6,15 @@ Notes:
 """
 
 import ctypes
-from ctypes.util import find_library
 import math
 import multiprocessing
 import os
 from ..directx import util
-from .structures import (ASTCENC_ERROR,
-                        ASTCENC_PRF, ASTCENC_QUALITY,
-                        ASTCENC_FLG, AstcencConfig,
-                        get_bgra_swizzle,
-                        ASTCENC_TYPE,
-                        PointerToPointer,
-                        AstcencImage)
+from .structures import (ASTCENC_ERROR, ASTCENC_PRF,
+                         ASTCENC_QUALITY, ASTCENC_FLG,
+                         AstcencConfig, get_bgra_swizzle,
+                         ASTCENC_TYPE, PointerToPointer,
+                         AstcencImage)
 
 DLL = None
 
@@ -59,13 +56,13 @@ class Astcenc:
             dll_path = util.find_local_library(dirname, "astcenc")
 
         if (dll_path is None) or (not os.path.exists(dll_path)):
-            raise RuntimeError(f'astcenc not found.')
+            raise RuntimeError('astcenc not found.')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
         DLL = self.dll
 
     def unload_dll(self):
-        unload_texconv()
+        unload_astcenc()
         self.dll = None
 
     def config_init(self, block_x, block_y, block_z=1,

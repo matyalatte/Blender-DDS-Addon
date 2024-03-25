@@ -1,6 +1,7 @@
 """Utils for I/O."""
 
 import ctypes
+from ctypes.util import find_library
 import os
 import platform
 
@@ -45,7 +46,7 @@ def is_arm():
 
 def get_dll_close_from_lib(lib_name):
     """Return dll function to unlaod DLL if the library has it."""
-    dlpath = ctypes.util.find_library(lib_name)
+    dlpath = find_library(lib_name)
     if dlpath is None:
         # DLL not found.
         return None
@@ -78,6 +79,6 @@ def find_local_library(dir, lib_name):
         name, ext = os.path.splitext(f)
         if ext not in [".dll", ".dylib", ".so"]:
             continue
-        if name.startswith(lib_name) or name.startswith("lib"  + lib_name):
+        if name.startswith(lib_name) or name.startswith("lib" + lib_name):
             return os.path.join(dir, f)
     return None

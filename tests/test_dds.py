@@ -7,6 +7,7 @@ from blender_dds_addon.ui import (import_dds,
                                   texture_list,
                                   custom_properties)
 from blender_dds_addon.directx.texconv import Texconv, unload_texconv
+from blender_dds_addon.astcenc.astcenc import Astcenc, unload_astcenc
 import bpy
 
 bpy.utils.register_class(texture_list.DDSTextureListItem)
@@ -15,6 +16,7 @@ custom_properties.add_custom_props_for_dds()
 
 texconv = Texconv()
 texconv.dll.init_com()
+astcenc = Astcenc()
 
 
 def get_test_dds():
@@ -24,11 +26,13 @@ def get_test_dds():
 
 def test_unload_empty_dll():
     unload_texconv()
+    unload_astcenc()
 
 
 def test_unload_dll():
     import_dds.load_dds(get_test_dds())
     unload_texconv()
+    unload_astcenc()
 
 
 @pytest.mark.parametrize("export_format", ["BC4_UNORM", "B8G8R8A8_UNORM_SRGB", "R16G16B16A16_FLOAT"])
@@ -85,6 +89,14 @@ def test_io_bc7():
     tex = import_dds.load_dds(os.path.join("tests", "bc7.dds"))
     tex = export_dds.save_dds(tex, "saved.dds", "BC7_UNORM",
                               texture_type="2d", allow_slow_codec=True)
+    os.remove("saved.dds")
+
+
+def test_io_astc():
+    """Test with ASTC textures."""
+    tex = import_dds.load_dds(os.path.join("tests", "astc.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "ASTC_6X6_UNORM",
+                              texture_type="2d")
     os.remove("saved.dds")
 
 

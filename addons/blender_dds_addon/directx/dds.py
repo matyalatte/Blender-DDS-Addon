@@ -460,7 +460,6 @@ class DDSHeader(c.LittleEndianStructure):
     def get_mip_sizes(self):
         """Calculate texture size and binary size of mipmaps"""
         mipmap_sizes = []
-        slice_size = 0
         width, height = self.width, self.height
         block_x, block_y = self.get_block_size()
         byte_per_block = self.get_byte_per_block()
@@ -482,6 +481,7 @@ class DDSHeader(c.LittleEndianStructure):
         self.pixel_format = DDSPixelFormat()
         self.dxgi_format = dxgi_format
         self.update(self.depth, self.get_array_size())
+
 
 class DDS:
     def __init__(self, header, slices=None):

@@ -5,7 +5,6 @@ Notes:
     And put the dll in the same directory as texconv.py.
 """
 import ctypes
-from ctypes.util import find_library
 import os
 import tempfile
 
@@ -47,7 +46,7 @@ class Texconv:
             dll_path = util.find_local_library(dirname, "texconv")
 
         if (dll_path is None) or (not os.path.exists(dll_path)):
-            raise RuntimeError(f'texconv not found.')
+            raise RuntimeError('texconv not found.')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
         DLL = self.dll

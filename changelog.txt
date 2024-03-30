@@ -1,5 +1,6 @@
 - Added support for arm64 chips on macOS (e.g. Apple M1)
 - Added support for ASTC formats
+- Fixed an error when importing snorm textures
 
 ver 0.3.5
 - Fixed typos

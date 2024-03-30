@@ -88,7 +88,7 @@ class Texconv:
                 args += ['-f', 'rgba']
 
         if dds_header.is_signed():
-            args += '-x2bias'
+            args += ['-x2bias']
 
         if dds_header.is_int():
             msg = f'Int format detected. ({dds_header.get_format_as_str()})\n It might not be converted correctly.'
@@ -147,7 +147,7 @@ class Texconv:
             args += ["-if", image_filter]
 
         if is_signed(dds_fmt):
-            args += '-x2bias'
+            args += ['-x2bias']
 
         if "SRGB" in dds_fmt:
             args += ['-srgb']

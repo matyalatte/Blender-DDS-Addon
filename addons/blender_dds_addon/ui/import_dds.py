@@ -15,8 +15,33 @@ import numpy as np
 from ..directx.dds import DDSHeader, DDS
 from ..directx.texconv import Texconv, unload_texconv
 from ..astcenc.astcenc import Astcenc, unload_astcenc
-from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist, flush_stdout
+from .bpy_util import (get_image_editor_space,
+                       load_texture, load_texture_from_buffer,
+                       dds_properties_exist, flush_stdout, dxgi_to_dtype)
 from .custom_properties import DDS_FMT_NAMES
+
+
+def load_uncompressed_dds(file, cubemap_layout='h-cross', color_space='Non-Color'):
+    dds = DDS.load(file)
+    w, h = dds.header.width, dds.header.height
+    bpb = dds.header.get_byte_per_block()
+    fmt = dds.header.get_format_as_str()
+    buffers = [b[:bpb * w * h] for b in dds.slice_bin_list]
+    tex = load_texture_from_buffer(os.path.basename(file)[:-4],
+                                   w, h, buffers,
+                                   dxgi_to_dtype(fmt),
+                                   cubemap_layout=cubemap_layout,
+                                   color_space=color_space)
+    return tex
+
+
+def load_dds_via_tga(texconv, file, out_dir, cubemap_layout='h-cross', invert_normals=False, color_space='Non-Color'):
+    tga = texconv.convert_to_tga(file, out=out_dir, cubemap_layout=cubemap_layout,
+                                 invert_normals=invert_normals)
+    if tga is None:
+        raise RuntimeError('Failed to convert texture.')
+    tex = load_texture(tga, name=os.path.basename(tga)[:-4], color_space=color_space)
+    return tex
 
 
 def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
@@ -58,7 +83,7 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
             else:
                 color_space = 'Non-Color'
 
-            tga_list = []
+            fmt = dds_header.get_format_as_str()
 
             # Disassemble if it's a non-2D texture
             if dds_header.is_3d() or dds_header.is_array():
@@ -72,20 +97,20 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
                     new_name += ".dds"
                     new_path = os.path.join(temp_dir, new_name)
                     new_dds.save(new_path)
-                    tga = texconv.convert_to_tga(new_path, out=temp_dir, cubemap_layout=cubemap_layout,
-                                                 invert_normals=invert_normals)
-                    tga_list.append(tga)
+                    if fmt == "R32G32B32A32_FLOAT" or fmt == "R16G16B16A16_FLOAT":
+                        tex = load_uncompressed_dds(new_path, cubemap_layout=cubemap_layout,
+                                                    color_space=color_space)
+                    else:
+                        tex = load_dds_via_tga(texconv, new_path, temp_dir, cubemap_layout=cubemap_layout,
+                                               invert_normals=invert_normals, color_space=color_space)
+                    tex_list.append(tex)
             else:
-                tga = texconv.convert_to_tga(temp, out=temp_dir, cubemap_layout=cubemap_layout,
-                                             invert_normals=invert_normals)
-                tga_list = [tga]
-
-            for tga in tga_list:
-                if tga is None:
-                    raise RuntimeError('Failed to convert texture.')
-
-                # Load tga file
-                tex = load_texture(tga, name=os.path.basename(tga)[:-4], color_space=color_space)
+                if fmt == "R32G32B32A32_FLOAT" or fmt == "R16G16B16A16_FLOAT":
+                    tex = load_uncompressed_dds(temp, cubemap_layout=cubemap_layout,
+                                                color_space=color_space)
+                else:
+                    tex = load_dds_via_tga(texconv, temp, temp_dir, cubemap_layout=cubemap_layout,
+                                           invert_normals=invert_normals, color_space=color_space)
                 tex_list.append(tex)
 
         tex = tex_list[0]

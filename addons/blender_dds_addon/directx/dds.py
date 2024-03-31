@@ -247,7 +247,7 @@ class DX10Header(c.LittleEndianStructure):
 
 
 def is_hdr(name: str):
-    return 'BC6' in name or 'FLOAT' in name or 'INT' in name
+    return 'BC6' in name or 'FLOAT' in name
 
 
 def is_signed(name: str):
@@ -455,6 +455,10 @@ class DDSHeader(c.LittleEndianStructure):
             return 16
         if ("B8G8R8A8" in fmt):
             return 4
+        if ("R16G16B16A16" in fmt):
+            return 8
+        if ("R32G32B32A32" in fmt):
+            return 16
         raise RuntimeError(f"get_byte_per_block() does not support {fmt}.")
 
     def get_mip_sizes(self):

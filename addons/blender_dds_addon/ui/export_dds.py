@@ -11,10 +11,12 @@ from bpy.types import Operator
 from bpy_extras.io_utils import ExportHelper
 import numpy as np
 
-from ..directx.dds import is_hdr, DDS
+from ..directx.dds import is_hdr, DDS, DDSHeader
+from ..directx.dxgi_format import DXGI_FORMAT
 from ..directx.texconv import Texconv, unload_texconv
 from ..astcenc.astcenc import Astcenc, unload_astcenc
-from .bpy_util import save_texture, dds_properties_exist, get_image_editor_space, flush_stdout
+from .bpy_util import (save_texture, texture_to_buffer, dxgi_to_dtype,
+                       dds_properties_exist, get_image_editor_space, flush_stdout)
 from .texture_list import draw_texture_list
 
 
@@ -115,9 +117,18 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         return temp_tex
 
     def save_temp_dds(tex, temp_dir, ext, fmt, texconv, verbose=True):
-        temp = os.path.join(temp_dir, tex.name + ext)
-
-        save_texture(tex, temp, fmt)
+        if dds_fmt == "R32G32B32A32_FLOAT" or dds_fmt == "R16G16B16A16_FLOAT":
+            temp = os.path.join(temp_dir, tex.name + ".dds")
+            buffer = texture_to_buffer(tex, dxgi_to_dtype(dds_fmt))
+            header = DDSHeader()
+            header.width, header.height = tex.size
+            header.dxgi_format = DXGI_FORMAT[dds_fmt]
+            header.update(1, 1)
+            dds = DDS(header, slices=[buffer])
+            dds.save(temp)
+        else:
+            temp = os.path.join(temp_dir, tex.name + ext)
+            save_texture(tex, temp, fmt)
 
         temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
                                           invert_normals=invert_normals, no_mip=no_mip,

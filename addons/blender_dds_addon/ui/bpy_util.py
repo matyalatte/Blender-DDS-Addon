@@ -79,7 +79,7 @@ def load_texture_from_buffer(name, width, height, buffers, dtype,
     Returns:
         tex (bpy.types.Image): loaded texture
     """
-    float_buffer = np.issubdtype(dtype, np.float)
+    float_buffer = np.issubdtype(dtype, np.floating)
     if len(buffers) == 1:
         tex = bpy.data.images.new(name, width, height, float_buffer=float_buffer)
         tex.colorspace_settings.name = color_space
@@ -122,6 +122,19 @@ def save_texture(tex, file, fmt):
         tex.file_format = file_format
         tex.filepath_raw = filepath_raw
         raise e
+
+
+def texture_to_buffer(tex, dtype):
+    """Get pixels as bytes.
+
+    Args:
+        tex (bpy.types.Image): an image object
+        dtype : a data type object for numpy
+    """
+    w, h = tex.size
+    pixels = np.array(tex.pixels, dtype=dtype).reshape(h, w, -1)
+    pixels = pixels[::-1].flatten()
+    return pixels.tobytes()
 
 
 def dxgi_to_dtype(fmt):

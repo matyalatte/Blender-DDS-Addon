@@ -6,9 +6,11 @@ from blender_dds_addon.ui import (import_dds,
                                   export_dds,
                                   texture_list,
                                   custom_properties)
+from blender_dds_addon.directx.dds import DDS
 from blender_dds_addon.directx.texconv import Texconv, unload_texconv
 from blender_dds_addon.astcenc.astcenc import Astcenc, unload_astcenc
 import bpy
+import numpy as np
 
 bpy.utils.register_class(texture_list.DDSTextureListItem)
 bpy.utils.register_class(custom_properties.DDSCustomProperties)
@@ -97,6 +99,20 @@ def test_io_astc():
     tex = import_dds.load_dds(os.path.join("tests", "astc.dds"))
     tex = export_dds.save_dds(tex, "saved.dds", "ASTC_6X6_UNORM",
                               texture_type="2d")
+    os.remove("saved.dds")
+
+
+def test_float_alpha():
+    """Test if the addon preserve alpha for HDR textures."""
+    tex = import_dds.load_dds(os.path.join("tests", "rgba16_float.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "R16G16B16A16_FLOAT",
+                              texture_type="2d")
+    dds = DDS.load("saved.dds")
+    assert dds.header.has_mips()
+    buffer = dds.slice_bin_list[0]
+    pixel = np.frombuffer(buffer[:8], dtype=np.float16)
+    alpha = pixel[3]
+    assert 0.49 < alpha and alpha < 0.51
     os.remove("saved.dds")
 
 

@@ -1,6 +1,7 @@
 - Added support for arm64 chips on macOS (e.g. Apple M1)
 - Added support for ASTC formats
 - Fixed an error when importing snorm textures
+- Fixed a bug that the addon removes alpha from HDR textures.
 
 ver 0.3.5
 - Fixed typos

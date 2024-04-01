@@ -125,8 +125,8 @@ class Texconv:
 
         ext = util.get_ext(file)
 
-        if is_hdr(dds_fmt) and ext != 'hdr':
-            raise RuntimeError(f'Use .hdr for HDR textures. ({file})')
+        if is_hdr(dds_fmt) and ext not in ['hdr', 'dds']:
+            raise RuntimeError(f'Use .hdr or .dds for HDR textures. ({file})')
         if ('BC6' in dds_fmt or 'BC7' in dds_fmt) and (not util.is_windows()) and (not allow_slow_codec):
             raise RuntimeError(f'Can NOT export {dds_fmt} textures on this platform.'
                                ' Or enable the "Allow Slow Codec" option.')

@@ -102,6 +102,14 @@ def test_io_astc():
     os.remove("saved.dds")
 
 
+def test_io_snorm():
+    """Test with SNORM textures."""
+    tex = import_dds.load_dds(os.path.join("tests", "snorm.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "R8G8B8A8_SNORM",
+                              texture_type="2d")
+    os.remove("saved.dds")
+
+
 def test_float_alpha():
     """Test if the addon preserve alpha for HDR textures."""
     tex = import_dds.load_dds(os.path.join("tests", "rgba16_float.dds"))

@@ -9,7 +9,7 @@ from .astcenc.astcenc import unload_astcenc
 bl_info = {
     'name': 'DDS textures',
     'author': 'Matyalatte',
-    'version': (0, 3, 5),
+    'version': (0, 4, 0),
     'blender': (2, 83, 20),
     'location': 'Image Editor > Sidebar > DDS Tab',
     'description': 'Import and export .dds files',

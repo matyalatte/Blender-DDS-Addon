@@ -5,7 +5,6 @@ Notes:
     And put the dll in the same directory as texconv.py.
 """
 import ctypes
-from ctypes.util import find_library
 import os
 import tempfile
 
@@ -16,42 +15,12 @@ from . import util
 DLL = None
 
 
-def get_dll_close_from_lib(lib_name):
-    """Return dll function to unlaod DLL if the library has it."""
-    dlpath = find_library(lib_name)
-    if dlpath is None:
-        # DLL not found.
-        return None
-    try:
-        lib = ctypes.CDLL(dlpath)
-        if hasattr(lib, "dlclose"):
-            return lib.dlclose
-    except OSError:
-        pass
-    # dlclose not found.
-    return None
-
-
-def get_dll_close():
-    """Get dll function to unload DLL."""
-    if util.is_windows():
-        return ctypes.windll.kernel32.FreeLibrary
-    else:
-        # Search libc, libdl, and libSystem
-        for lib_name in ["c", "dl", "System"]:
-            dlclose = get_dll_close_from_lib(lib_name)
-            if dlclose is not None:
-                return dlclose
-    # Failed to find dlclose
-    return None
-
-
 def unload_texconv():
     global DLL
     if DLL is None:
         return
 
-    dll_close = get_dll_close()
+    dll_close = util.get_dll_close()
     if dll_close is None:
         raise RuntimeError("Failed to unload DLL.")
 
@@ -73,23 +42,11 @@ class Texconv:
             return
 
         if dll_path is None:
-            file_path = os.path.realpath(__file__)
-            if util.is_windows():
-                dll_name = "texconv.dll"
-            elif util.is_mac():
-                dll_name = "libtexconv.dylib"
-            elif util.is_linux():
-                dll_name = "libtexconv.so"
-            else:
-                raise RuntimeError(f'This OS ({util.get_os_name()}) is unsupported.')
-            dirname = os.path.dirname(file_path)
-            dll_path = os.path.join(dirname, dll_name)
+            dirname = os.path.dirname(os.path.realpath(__file__))
+            dll_path = util.find_local_library(dirname, "texconv")
 
-            if util.is_arm():
-                raise RuntimeError(f'{dll_name} does NOT support ARM devices')
-
-        if not os.path.exists(dll_path):
-            raise RuntimeError(f'texconv not found. ({dll_path})')
+        if (dll_path is None) or (not os.path.exists(dll_path)):
+            raise RuntimeError('texconv not found.')
 
         self.dll = ctypes.cdll.LoadLibrary(dll_path)
         DLL = self.dll
@@ -105,10 +62,9 @@ class Texconv:
 
         dds_header = DDSHeader.read_from_file(file)
 
-        if not dds_header.is_supported():
+        if not dds_header.is_official():
             raise RuntimeError(
                 f"DDS converter does NOT support {dds_header.get_format_as_str()}.\n"
-                "Use '.dds' as an export format."
             )
 
         if dds_header.is_3d() or dds_header.is_array():
@@ -132,7 +88,7 @@ class Texconv:
                 args += ['-f', 'rgba']
 
         if dds_header.is_signed():
-            args += '-x2bias'
+            args += ['-x2bias']
 
         if dds_header.is_int():
             msg = f'Int format detected. ({dds_header.get_format_as_str()})\n It might not be converted correctly.'
@@ -169,8 +125,8 @@ class Texconv:
 
         ext = util.get_ext(file)
 
-        if is_hdr(dds_fmt) and ext != 'hdr':
-            raise RuntimeError(f'Use .hdr for HDR textures. ({file})')
+        if is_hdr(dds_fmt) and ext not in ['hdr', 'dds']:
+            raise RuntimeError(f'Use .hdr or .dds for HDR textures. ({file})')
         if ('BC6' in dds_fmt or 'BC7' in dds_fmt) and (not util.is_windows()) and (not allow_slow_codec):
             raise RuntimeError(f'Can NOT export {dds_fmt} textures on this platform.'
                                ' Or enable the "Allow Slow Codec" option.')
@@ -191,7 +147,7 @@ class Texconv:
             args += ["-if", image_filter]
 
         if is_signed(dds_fmt):
-            args += '-x2bias'
+            args += ['-x2bias']
 
         if "SRGB" in dds_fmt:
             args += ['-srgb']

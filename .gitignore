@@ -8,6 +8,7 @@ htmlcov
 # scripts
 *.bat
 *.sh
+!external/build*.*
 
 # textures
 *.dds

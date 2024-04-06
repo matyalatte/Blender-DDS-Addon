@@ -38,26 +38,28 @@ It'll download the file and place it in a proper location.
 
 ## 3. Build Texconv
 
-### for Windows
-
-Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL/batch_files`.  
-Then, type `build.bat`.  
-`texconv.dll` will be generated in `./Blender-DDS-Addon/external/Texconv-Custom-DLL/`  
-
-### for Unix/Linux
-
-Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL/shell_scripts`.  
-Then, type `bash build.sh`.  
-`libtexconv.so` (or `libtexconv.dylib`) will be generated in `./Blender-DDS-Addon/external/Texconv-Custom-DLL/`  
+Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL`.  
+Then, run `batch_files/build_without_vcruntime.bat` or `bash shell_scripts/build_universal.sh`
+`texconv.dll` or `libtexconv.*` will be generated in `./Blender-DDS-Addon/external/Texconv-Custom-DLL/`  
 
 ## 4. Copy Texconv
 
 Copy the built binary (`texconv.dll`, `libtexconv.dylib` or `libtexconv.so`) to `./Blender-DDS-Addon/addons/blender_dds_addon/directx`.  
 
-## 5. Archive Files
+## 5. Build astc-encoder
+
+Move to `C:\Users\nk0902\git\Blender-DDS-Addon\external`.  
+Then, run `build_astcenc.bat`, `build_astcenc_Linux.sh`, or `build_astcenc_macOS.sh`.  
+`astcenc-*.dll` or `libastcenc-*.*` will be generated in `./Blender-DDS-Addon/external/astc-encoder/`  
+
+## 6. Copy astcenc
+
+Copy the built binary (`astcenc-*.dll` or `libastcenc-*.*`) to `./Blender-DDS-Addon/addons/blender_dds_addon/astcenc`.  
+
+## 7. Archive Files
 
 Zip the addon folder (`./Blender-DDS-Addon/addons/blender_dds_addon`).  
 
-## 6. Done!
+## 8. Done!
 
 You can install the addon with the zip file (`blender_dds_addon.zip`).  

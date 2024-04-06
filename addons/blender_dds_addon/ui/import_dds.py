@@ -14,11 +14,38 @@ import numpy as np
 
 from ..directx.dds import DDSHeader, DDS
 from ..directx.texconv import Texconv, unload_texconv
-from .bpy_util import get_image_editor_space, load_texture, dds_properties_exist, flush_stdout
+from ..astcenc.astcenc import Astcenc, unload_astcenc
+from .bpy_util import (get_image_editor_space,
+                       load_texture, load_texture_from_buffer,
+                       dds_properties_exist, flush_stdout, dxgi_to_dtype)
 from .custom_properties import DDS_FMT_NAMES
 
 
-def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None):
+def load_uncompressed_dds(file, cubemap_layout='h-cross', color_space='Non-Color'):
+    dds = DDS.load(file)
+    w, h = dds.header.width, dds.header.height
+    bpb = dds.header.get_byte_per_block()
+    fmt = dds.header.get_format_as_str()
+    buffers = [b[:bpb * w * h] for b in dds.slice_bin_list]
+    tex = load_texture_from_buffer(os.path.basename(file)[:-4],
+                                   w, h, buffers,
+                                   dxgi_to_dtype(fmt),
+                                   cubemap_layout=cubemap_layout,
+                                   color_space=color_space)
+    return tex
+
+
+def load_dds_via_tga(texconv, file, out_dir, cubemap_layout='h-cross', invert_normals=False, color_space='Non-Color'):
+    tga = texconv.convert_to_tga(file, out=out_dir, cubemap_layout=cubemap_layout,
+                                 invert_normals=invert_normals)
+    if tga is None:
+        raise RuntimeError('Failed to convert texture.')
+    tex = load_texture(tga, name=os.path.basename(tga)[:-4], color_space=color_space)
+    return tex
+
+
+def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
+             texconv=None, astcenc=None):
     """Import a texture form .dds file.
 
     Args:
@@ -26,6 +53,7 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
         invert_normals (bool): Flip y axis if the texture is normal map.
         cubemap_layout (string): Layout for cubemap faces.
         texconv (Texconv): Texture converter for dds.
+        astcenc (Astcenc): Astc converter.
 
     Returns:
         tex (bpy.types.Image): loaded texture
@@ -38,8 +66,16 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
 
             if texconv is None:
                 texconv = Texconv()
+            if astcenc is None:
+                astcenc = Astcenc()
 
             dds_header = DDSHeader.read_from_file(temp)
+
+            if dds_header.is_astc():
+                dds = DDS.load(temp)
+                dds.remove_mips()
+                dds.decompress_astc(astcenc)
+                dds.save(temp)
 
             # Check dxgi_format
             if dds_header.is_srgb():
@@ -47,7 +83,7 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
             else:
                 color_space = 'Non-Color'
 
-            tga_list = []
+            fmt = dds_header.get_format_as_str()
 
             # Disassemble if it's a non-2D texture
             if dds_header.is_3d() or dds_header.is_array():
@@ -61,20 +97,20 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
                     new_name += ".dds"
                     new_path = os.path.join(temp_dir, new_name)
                     new_dds.save(new_path)
-                    tga = texconv.convert_to_tga(new_path, out=temp_dir, cubemap_layout=cubemap_layout,
-                                                 invert_normals=invert_normals)
-                    tga_list.append(tga)
+                    if fmt == "R32G32B32A32_FLOAT" or fmt == "R16G16B16A16_FLOAT":
+                        tex = load_uncompressed_dds(new_path, cubemap_layout=cubemap_layout,
+                                                    color_space=color_space)
+                    else:
+                        tex = load_dds_via_tga(texconv, new_path, temp_dir, cubemap_layout=cubemap_layout,
+                                               invert_normals=invert_normals, color_space=color_space)
+                    tex_list.append(tex)
             else:
-                tga = texconv.convert_to_tga(temp, out=temp_dir, cubemap_layout=cubemap_layout,
-                                             invert_normals=invert_normals)
-                tga_list = [tga]
-
-            for tga in tga_list:
-                if tga is None:
-                    raise RuntimeError('Failed to convert texture.')
-
-                # Load tga file
-                tex = load_texture(tga, name=os.path.basename(tga)[:-4], color_space=color_space)
+                if fmt == "R32G32B32A32_FLOAT" or fmt == "R16G16B16A16_FLOAT":
+                    tex = load_uncompressed_dds(temp, cubemap_layout=cubemap_layout,
+                                                color_space=color_space)
+                else:
+                    tex = load_dds_via_tga(texconv, temp, temp_dir, cubemap_layout=cubemap_layout,
+                                           invert_normals=invert_normals, color_space=color_space)
                 tex_list.append(tex)
 
         tex = tex_list[0]
@@ -118,17 +154,18 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross', texconv=None)
     return tex_list[0]
 
 
-def import_dds(context, file):
+def import_dds(context, file, texconv=None, astcenc=None):
     """Import a file."""
     space = get_image_editor_space(context)
     dds_options = context.scene.dds_options
     tex = load_dds(file, invert_normals=dds_options.invert_normals,
-                   cubemap_layout=dds_options.cubemap_layout)
+                   cubemap_layout=dds_options.cubemap_layout,
+                   texconv=texconv, astcenc=astcenc)
     if space:
         space.image = tex
 
 
-def import_dds_rec(context, folder):
+def import_dds_rec(context, folder, texconv=None, astcenc=None):
     """Search a folder recursively, and import found dds files."""
     count = 0
     for file in sorted(os.listdir(folder)):
@@ -136,7 +173,7 @@ def import_dds_rec(context, folder):
         if os.path.isdir(path):
             count += import_dds_rec(context, path)
         elif file.split('.')[-1].lower() == "dds":
-            import_dds(context, path)
+            import_dds(context, path, texconv=texconv, astcenc=astcenc)
             count += 1
     return count
 
@@ -157,16 +194,21 @@ class DDS_OT_import_base(Operator):
         if directory is None:
             raise RuntimeError('"self.directory" is not specified. This is unexpected.')
 
+        texconv = Texconv()
+        astcenc = Astcenc()
+
         try:
             start_time = time.time()
             if is_dir:
                 # For DDS_OT_import_dir
-                count = import_dds_rec(context, directory)
+                count = import_dds_rec(context, directory,
+                                       texconv=texconv, astcenc=astcenc)
             else:
                 # For DDS_OT_import_dds
                 count = 0
                 for _, file in enumerate(files):
-                    import_dds(context, os.path.join(directory, file.name))
+                    import_dds(context, os.path.join(directory, file.name),
+                               texconv=texconv, astcenc=astcenc)
                     flush_stdout()
                     count += 1
             elapsed_s = f'{(time.time() - start_time):.2f}s'
@@ -187,6 +229,7 @@ class DDS_OT_import_base(Operator):
 
         # release DLL resources
         unload_texconv()
+        unload_astcenc()
 
         return ret
 

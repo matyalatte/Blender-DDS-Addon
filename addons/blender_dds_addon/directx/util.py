@@ -1,5 +1,7 @@
 """Utils for I/O."""
 
+import ctypes
+from ctypes.util import find_library
 import os
 import platform
 
@@ -40,3 +42,43 @@ def is_mac():
 
 def is_arm():
     return 'arm' in platform.machine().lower()
+
+
+def get_dll_close_from_lib(lib_name):
+    """Return dll function to unlaod DLL if the library has it."""
+    dlpath = find_library(lib_name)
+    if dlpath is None:
+        # DLL not found.
+        return None
+    try:
+        lib = ctypes.CDLL(dlpath)
+        if hasattr(lib, "dlclose"):
+            return lib.dlclose
+    except OSError:
+        pass
+    # dlclose not found.
+    return None
+
+
+def get_dll_close():
+    """Get dll function to unload DLL."""
+    if is_windows():
+        return ctypes.windll.kernel32.FreeLibrary
+    else:
+        # Search libc, libdl, and libSystem
+        for lib_name in ["c", "dl", "System"]:
+            dlclose = get_dll_close_from_lib(lib_name)
+            if dlclose is not None:
+                return dlclose
+    # Failed to find dlclose
+    return None
+
+
+def find_local_library(dir, lib_name):
+    for f in os.listdir(dir):
+        name, ext = os.path.splitext(f)
+        if ext not in [".dll", ".dylib", ".so"]:
+            continue
+        if name.startswith(lib_name) or name.startswith("lib" + lib_name):
+            return os.path.join(dir, f)
+    return None

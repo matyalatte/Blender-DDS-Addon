@@ -1,5 +1,6 @@
 import os
 import bpy
+import numpy as np
 
 
 def flush_stdout():
@@ -50,6 +51,54 @@ def load_texture(file, name, color_space='Non-Color'):
     return tex
 
 
+# height, width, x+pos, x-pos, y+pos, y-pos, z+pos, z-pos
+cube_layouts = {
+    "h-cross": [3, 4, [1, 2], [1, 0], [2, 1], [0, 1], [1, 1], [1, 3]],
+    "v-cross": [4, 3, [2, 2], [2, 0], [3, 1], [1, 1], [2, 1], [0, 1]],
+    "h-cross-fnz": [3, 4, [1, 2], [1, 0], [2, 1], [0, 1], [1, 1], [1, 3]],
+    "v-cross-fnz": [4, 3, [2, 2], [2, 0], [3, 1], [1, 1], [2, 1], [0, 1]],
+    "h-strip": [1, 6, [0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5]],
+    "v-strip": [6, 1, [5, 0], [4, 0], [3, 0], [2, 0], [1, 0], [0, 0]],
+}
+
+
+def load_texture_from_buffer(name, width, height, buffers, dtype,
+                             cubemap_layout='h-cross', color_space='Non-Color'):
+    """Load a texture file from buffers.
+
+    Args:
+        name (string): object name for the texture
+        width (int): image width
+        height (int): image height
+        buffers (list[byte]): binary data for pixels.
+                              A buffer for a 2d image, Six buffers for a cubemap.
+        dtype : a data type object for numpy
+        cubemap_layout (string): layout for cubemaps
+        color_space (string): color space
+
+    Returns:
+        tex (bpy.types.Image): loaded texture
+    """
+    float_buffer = np.issubdtype(dtype, np.floating)
+    if len(buffers) == 1:
+        tex = bpy.data.images.new(name, width, height, float_buffer=float_buffer)
+        tex.colorspace_settings.name = color_space
+        pixels = np.frombuffer(buffers[0], dtype=dtype).reshape((height, width, -1))
+        pixels = pixels[::-1]
+        tex.pixels = list(pixels.flatten())
+    else:
+        layout = cube_layouts[cubemap_layout]
+        tex = bpy.data.images.new(name, width * layout[1], height * layout[0], float_buffer=float_buffer)
+        tex.colorspace_settings.name = color_space
+        pixels = np.zeros((height * layout[0], width * layout[1], 4), dtype=dtype)
+        for buf, pos in zip(buffers, layout[2:]):
+            face = np.frombuffer(buf, dtype=dtype).reshape((height, width, -1))
+            face = face[::-1]
+            pixels[height * pos[0]: height * (pos[0] + 1), width * pos[1]: width * (pos[1] + 1), ::] = face
+        tex.pixels = list(pixels.flatten())
+    return tex
+
+
 def save_texture(tex, file, fmt):
     """Save a texture.
 
@@ -73,3 +122,24 @@ def save_texture(tex, file, fmt):
         tex.file_format = file_format
         tex.filepath_raw = filepath_raw
         raise e
+
+
+def texture_to_buffer(tex, dtype):
+    """Get pixels as bytes.
+
+    Args:
+        tex (bpy.types.Image): an image object
+        dtype : a data type object for numpy
+    """
+    w, h = tex.size
+    pixels = np.array(tex.pixels, dtype=dtype).reshape(h, w, -1)
+    pixels = pixels[::-1].flatten()
+    return pixels.tobytes()
+
+
+def dxgi_to_dtype(fmt):
+    if fmt == "R32G32B32A32_FLOAT":
+        return np.float32
+    if fmt == "R16G16B16A16_FLOAT":
+        return np.float16
+    raise RuntimeError(f"dxgi_to_dtype() does not support {fmt}.")

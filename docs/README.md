@@ -1,4 +1,4 @@
-# Blender-DDS-Addon v0.3.5
+# Blender-DDS-Addon v0.4.0
 
 [![Github All Releases](https://img.shields.io/github/downloads/matyalatte/Blender-DDS-Addon/total.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -12,7 +12,7 @@ Blender addon to import and export dds textures
 
 - Import DDS textures as TGA (or HDR)
 - Export textures as DDS
-- Support many DXGI formats (including BC6 and BC7)
+- Support many DXGI formats (including BC6, BC7, and ASTC)
 - Support non-2D textures (cubemaps, arrays, and volume textures)
 
 ## Download
@@ -113,6 +113,34 @@ Here is a list of supported formats.
 * B8G8R8X8_UNORM_SRGB
 * B4G4R4A4_UNORM
 * A4B4G4R4_UNORM
+* ASTC_4X4_UNORM
+* ASTC_4X4_UNORM_SRGB
+* ASTC_5X4_UNORM
+* ASTC_5X4_UNORM_SRGB
+* ASTC_5X5_UNORM
+* ASTC_5X5_UNORM_SRGB
+* ASTC_6X5_UNORM
+* ASTC_6X5_UNORM_SRGB
+* ASTC_6X6_UNORM
+* ASTC_6X6_UNORM_SRGB
+* ASTC_8X5_UNORM
+* ASTC_8X5_UNORM_SRGB
+* ASTC_8X6_UNORM
+* ASTC_8X6_UNORM_SRGB
+* ASTC_8X8_UNORM
+* ASTC_8X8_UNORM_SRGB
+* ASTC_10X5_UNORM
+* ASTC_10X5_UNORM_SRGB
+* ASTC_10X6_UNORM
+* ASTC_10X6_UNORM_SRGB
+* ASTC_10X8_UNORM
+* ASTC_10X8_UNORM_SRGB
+* ASTC_10X10_UNORM
+* ASTC_10X10_UNORM_SRGB
+* ASTC_12X10_UNORM
+* ASTC_12X10_UNORM_SRGB
+* ASTC_12X12_UNORM
+* ASTC_12X12_UNORM_SRGB
 
 </details>
 
@@ -132,10 +160,16 @@ is a texture converter developed by Microsoft.
 It's the best DDS converter as far as I know.  
 And [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL) is a cross-platform implementation I made.  
 The official Texconv only supports Windows but you can use it on Unix/Linux systems.  
+It is released under the [MIT license](../LICENSE).
+
+### astc-encoder
+
+[astc-encoder](https://github.com/ARM-software/astc-encoder) is a texture converter for ASTC formats.  
+It is released under the [Apache-2.0 license](https://github.com/ARM-software/astc-encoder?tab=Apache-2.0-1-ov-file#readme).
 
 ## License
 
-Files in this repository (including all submodules) are available under the [MIT license](../LICENSE).
+Files in this repository are available under the [MIT license](../LICENSE).
 
 ## For Developers
 

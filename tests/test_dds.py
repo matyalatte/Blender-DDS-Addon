@@ -6,8 +6,11 @@ from blender_dds_addon.ui import (import_dds,
                                   export_dds,
                                   texture_list,
                                   custom_properties)
+from blender_dds_addon.directx.dds import DDS
 from blender_dds_addon.directx.texconv import Texconv, unload_texconv
+from blender_dds_addon.astcenc.astcenc import Astcenc, unload_astcenc
 import bpy
+import numpy as np
 
 bpy.utils.register_class(texture_list.DDSTextureListItem)
 bpy.utils.register_class(custom_properties.DDSCustomProperties)
@@ -15,6 +18,7 @@ custom_properties.add_custom_props_for_dds()
 
 texconv = Texconv()
 texconv.dll.init_com()
+astcenc = Astcenc()
 
 
 def get_test_dds():
@@ -24,11 +28,13 @@ def get_test_dds():
 
 def test_unload_empty_dll():
     unload_texconv()
+    unload_astcenc()
 
 
 def test_unload_dll():
     import_dds.load_dds(get_test_dds())
     unload_texconv()
+    unload_astcenc()
 
 
 @pytest.mark.parametrize("export_format", ["BC4_UNORM", "B8G8R8A8_UNORM_SRGB", "R16G16B16A16_FLOAT"])
@@ -85,6 +91,36 @@ def test_io_bc7():
     tex = import_dds.load_dds(os.path.join("tests", "bc7.dds"))
     tex = export_dds.save_dds(tex, "saved.dds", "BC7_UNORM",
                               texture_type="2d", allow_slow_codec=True)
+    os.remove("saved.dds")
+
+
+def test_io_astc():
+    """Test with ASTC textures."""
+    tex = import_dds.load_dds(os.path.join("tests", "astc.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "ASTC_6X6_UNORM",
+                              texture_type="2d")
+    os.remove("saved.dds")
+
+
+def test_io_snorm():
+    """Test with SNORM textures."""
+    tex = import_dds.load_dds(os.path.join("tests", "snorm.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "R8G8B8A8_SNORM",
+                              texture_type="2d")
+    os.remove("saved.dds")
+
+
+def test_float_alpha():
+    """Test if the addon preserve alpha for HDR textures."""
+    tex = import_dds.load_dds(os.path.join("tests", "rgba16_float.dds"))
+    tex = export_dds.save_dds(tex, "saved.dds", "R16G16B16A16_FLOAT",
+                              texture_type="2d")
+    dds = DDS.load("saved.dds")
+    assert dds.header.has_mips()
+    buffer = dds.slice_bin_list[0]
+    pixel = np.frombuffer(buffer[:8], dtype=np.float16)
+    alpha = pixel[3]
+    assert 0.49 < alpha and alpha < 0.51
     os.remove("saved.dds")
 
 

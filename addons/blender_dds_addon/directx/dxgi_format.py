@@ -135,6 +135,46 @@ class DXGI_FORMAT(IntEnum):
     # non-official formats
     ASTC_4X4_TYPELESS = 133
     ASTC_4X4_UNORM = 134
+    ASTC_4X4_UNORM_SRGB = 135
+    ASTC_5X4_TYPELESS = 137
+    ASTC_5X4_UNORM = 138
+    ASTC_5X4_UNORM_SRGB = 139
+    ASTC_5X5_TYPELESS = 141
+    ASTC_5X5_UNORM = 142
+    ASTC_5X5_UNORM_SRGB = 143
+    ASTC_6X5_TYPELESS = 145
+    ASTC_6X5_UNORM = 146
+    ASTC_6X5_UNORM_SRGB = 147
+    ASTC_6X6_TYPELESS = 149
+    ASTC_6X6_UNORM = 150
+    ASTC_6X6_UNORM_SRGB = 151
+    ASTC_8X5_TYPELESS = 153
+    ASTC_8X5_UNORM = 154
+    ASTC_8X5_UNORM_SRGB = 155
+    ASTC_8X6_TYPELESS = 157
+    ASTC_8X6_UNORM = 158
+    ASTC_8X6_UNORM_SRGB = 159
+    ASTC_8X8_TYPELESS = 161
+    ASTC_8X8_UNORM = 162
+    ASTC_8X8_UNORM_SRGB = 163
+    ASTC_10X5_TYPELESS = 165
+    ASTC_10X5_UNORM = 166
+    ASTC_10X5_UNORM_SRGB = 167
+    ASTC_10X6_TYPELESS = 169
+    ASTC_10X6_UNORM = 170
+    ASTC_10X6_UNORM_SRGB = 171
+    ASTC_10X8_TYPELESS = 173
+    ASTC_10X8_UNORM = 174
+    ASTC_10X8_UNORM_SRGB = 175
+    ASTC_10X10_TYPELESS = 177
+    ASTC_10X10_UNORM = 178
+    ASTC_10X10_UNORM_SRGB = 179
+    ASTC_12X10_TYPELESS = 181
+    ASTC_12X10_UNORM = 182
+    ASTC_12X10_UNORM_SRGB = 183
+    ASTC_12X12_TYPELESS = 185
+    ASTC_12X12_UNORM = 186
+    ASTC_12X12_UNORM_SRGB = 187
 
     @classmethod
     def is_valid_format(cls, fmt_name):
@@ -152,7 +192,7 @@ class DXGI_FORMAT(IntEnum):
         }
 
         if num_type in new_num_types:
-            name = "_".join(name_split[:-1] + new_num_types[num_type])
+            name = "_".join(name_split[:-1] + [new_num_types[num_type]])
         else:
             return fmt
 
@@ -187,7 +227,12 @@ FOURCC_TO_DXGI = [
     [[int_to_byte(113)], DXGI_FORMAT.R16G16B16A16_FLOAT],
     [[int_to_byte(114)], DXGI_FORMAT.R32_FLOAT],
     [[int_to_byte(115)], DXGI_FORMAT.R32G32_FLOAT],
-    [[int_to_byte(116)], DXGI_FORMAT.R32G32B32A32_FLOAT]
+    [[int_to_byte(116)], DXGI_FORMAT.R32G32B32A32_FLOAT],
+    [[b'AS44'], DXGI_FORMAT.ASTC_4X4_UNORM],
+    [[b'AS55'], DXGI_FORMAT.ASTC_5X5_UNORM],
+    [[b'AS66'], DXGI_FORMAT.ASTC_6X6_UNORM],
+    [[b'AS85'], DXGI_FORMAT.ASTC_8X5_UNORM],
+    [[b'AS86'], DXGI_FORMAT.ASTC_8X6_UNORM],
 ]
 
 

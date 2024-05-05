@@ -66,7 +66,7 @@ def get_dll_close():
         return ctypes.windll.kernel32.FreeLibrary
     else:
         # Search libc, libdl, and libSystem
-        for lib_name in ["c", "dl", "System"]:
+        for lib_name in {"c", "dl", "System"}:
             dlclose = get_dll_close_from_lib(lib_name)
             if dlclose is not None:
                 return dlclose
@@ -77,7 +77,7 @@ def get_dll_close():
 def find_local_library(dir, lib_name):
     for f in os.listdir(dir):
         name, ext = os.path.splitext(f)
-        if ext not in [".dll", ".dylib", ".so"]:
+        if ext not in {".dll", ".dylib", ".so"}:
             continue
         if name.startswith(lib_name) or name.startswith("lib" + lib_name):
             return os.path.join(dir, f)

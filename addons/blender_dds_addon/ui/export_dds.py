@@ -64,7 +64,7 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
     if is_srgb and color_space != 'sRGB':
         print("Warning: Specified DXGI format uses sRGB as a color space,"
               f"but the texture uses {color_space} in Blender")
-    elif (not is_srgb) and color_space not in ['Non-Color', 'Raw']:
+    elif (not is_srgb) and color_space not in {'Non-Color', 'Raw'}:
         print("Warning: Specified DXGI format does not use any color space conversion,"
               f"but the texture uses {color_space} in Blender")
 
@@ -88,12 +88,12 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
         h_ratio = h // face_size
 
         expected_ratio_dict = {
-            "h-cross": [4, 3],
-            "v-cross": [3, 4],
-            "h-cross-fnz": [4, 3],
-            "v-cross-fnz": [3, 4],
-            "h-strip": [6, 1],
-            "v-strip": [1, 6]
+            "h-cross": (4, 3),
+            "v-cross": (3, 4),
+            "h-cross-fnz": (4, 3),
+            "v-cross-fnz": (3, 4),
+            "h-strip": (6, 1),
+            "v-strip": (1, 6)
         }
 
         expected_ratio = expected_ratio_dict[cubemap_layout]
@@ -233,9 +233,9 @@ def put_export_options(context, layout):
     if not dds_properties_exist():
         layout.prop(dds_options, 'no_mip')
         layout.prop(dds_options, 'texture_type')
-        if dds_options.texture_type in ["cube", "cube_array"]:
+        if dds_options.texture_type in {"cube", "cube_array"}:
             layout.prop(dds_options, "cubemap_layout")
-        if dds_options.texture_type in ["2d_array", "cube_array", "volume"]:
+        if dds_options.texture_type in {"2d_array", "cube_array", "volume"}:
             draw_texture_list(layout, context, dds_options)
     layout.prop(dds_options, 'allow_slow_codec')
 

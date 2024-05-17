@@ -2,7 +2,8 @@
 import importlib
 from pathlib import Path
 
-from .ui import import_dds, export_dds, custom_properties, preferences, texture_list
+from .ui import (import_dds, export_dds, custom_properties,
+                 preferences, texture_list, drag_drop)
 from .directx.texconv import unload_texconv
 from .astcenc.astcenc import unload_astcenc
 
@@ -41,7 +42,8 @@ modules = [
     import_dds,
     export_dds,
     texture_list,
-    custom_properties
+    custom_properties,
+    drag_drop,
 ]
 
 

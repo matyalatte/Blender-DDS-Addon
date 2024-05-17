@@ -31,6 +31,7 @@ def is_supported(fmt):
 DDS_FMT_ITEMS = [(fmt, get_alt_fmt(fmt), '') for fmt in fmt_list if is_supported(fmt)]
 DDS_FMT_NAMES = [fmt for fmt in fmt_list if is_supported(fmt)]
 
+
 class DDSPropBase:
     no_mip: BoolProperty(
         name='No Mipmaps',

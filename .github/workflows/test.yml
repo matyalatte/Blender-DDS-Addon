@@ -26,7 +26,7 @@ jobs:
         run: |
           flake8
           python for_dev/lint.py --path=addons/blender_dds_addon
-          codespell -S ".git,.pytest_cache,external,htmlcov"
+          codespell
 
   test:
     # Most code is from pytest-blender's workflow by mondeja.

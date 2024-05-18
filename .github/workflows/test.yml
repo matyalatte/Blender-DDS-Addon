@@ -40,25 +40,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Test with 2.83, 3.3, 3.6, and 4.0 on Windows
+          # Test with 2.83, 3.3, 3.6, and 4.1 on Windows
           - platform: windows-latest
-            blender-version: '4.0.2'
+            blender-version: '4.1.1'
 
           - platform: windows-latest
-            blender-version: '3.6.9'
+            blender-version: '3.6.11'
 
           - platform: windows-latest
-            blender-version: '3.3.16'
+            blender-version: '3.3.18'
 
           - platform: windows-latest
             blender-version: '2.83.20'
 
           # Test with 3.6 on Unix/Linux systems
           - platform: ubuntu-latest
-            blender-version: '3.6.9'
+            blender-version: '3.6.11'
 
           - platform: macos-latest
-            blender-version: '3.6.9'
+            blender-version: '3.6.11'
 
     steps:
       - uses: actions/checkout@v4

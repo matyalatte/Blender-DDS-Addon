@@ -25,7 +25,7 @@ def get_alt_fmt(fmt):
 
 def is_supported(fmt):
     return ('TYPELESS' not in fmt) and\
-           (len(fmt) > 4) and (fmt not in ["UNKNOWN", "OPAQUE_420"])
+           (len(fmt) > 4) and (fmt not in {"UNKNOWN", "OPAQUE_420"})
 
 
 DDS_FMT_ITEMS = [(fmt, get_alt_fmt(fmt), '') for fmt in fmt_list if is_supported(fmt)]

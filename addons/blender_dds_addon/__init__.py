@@ -2,14 +2,15 @@
 import importlib
 from pathlib import Path
 
-from .ui import import_dds, export_dds, custom_properties, preferences, texture_list
+from .ui import (import_dds, export_dds, custom_properties,
+                 preferences, texture_list, drag_drop)
 from .directx.texconv import unload_texconv
 from .astcenc.astcenc import unload_astcenc
 
 bl_info = {
     'name': 'DDS textures',
     'author': 'Matyalatte',
-    'version': (0, 4, 0),
+    'version': (0, 4, 1),
     'blender': (2, 83, 20),
     'location': 'Image Editor > Sidebar > DDS Tab',
     'description': 'Import and export .dds files',
@@ -41,7 +42,8 @@ modules = [
     import_dds,
     export_dds,
     texture_list,
-    custom_properties
+    custom_properties,
+    drag_drop,
 ]
 
 

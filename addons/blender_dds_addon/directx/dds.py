@@ -443,11 +443,11 @@ class DDSHeader(c.LittleEndianStructure):
     def get_block_size(self):
         fmt = self.get_format_as_str()
         if ("ASTC" in fmt):
-            block_parsed = fmt.split("_")[1].split("X")
-            return [int(s) for s in block_parsed]
+            parsed = fmt.split("_")[1].split("X")
+            return (int(parsed[0]), int(parsed[1]))
         if ("BC" in fmt):
-            return [4, 4]
-        return [1, 1]
+            return (4, 4)
+        return (1, 1)
 
     def get_byte_per_block(self):
         fmt = self.get_format_as_str()

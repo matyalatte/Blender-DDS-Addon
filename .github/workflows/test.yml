@@ -157,7 +157,7 @@ jobs:
 
       - name: Tests for Windows
         if: runner.os == 'Windows'
-        run: pytest tests -svv
+        run: pytest -p no:faulthandler tests -svv
         env:
           BLENDER_EXECUTABLE: ${{ steps.install-dependencies-windows.outputs.blender-executable }}
 

@@ -1,3 +1,5 @@
+- Fixed a bug that exported dds files have wrong flags.
+
 ver 0.4.1
 - Added support for drag-drop import
 

@@ -105,10 +105,10 @@ class DDS_FLAGS(IntEnum):
     CAPS = 0x1
     HEIGHT = 0x2
     WIDTH = 0x4
-    PITCH = 0x8  # Use "w * h * bpp" for pitch_or_linear_size
+    PITCH = 0x8  # Use "w * bpp" for pitch_or_linear_size
     PIXELFORMAT = 0x1000
     MIPMAPCOUNT = 0x20000
-    LINEARSIZE = 0x80000  # Use "w * bpp" for pitch_or_linear_size
+    LINEARSIZE = 0x80000  # Use "w * h * bpp" for pitch_or_linear_size
     DEPTH = 0x800000  # For volume textures
     DEFAULT = CAPS | HEIGHT | WIDTH | PIXELFORMAT | MIPMAPCOUNT
 
@@ -116,9 +116,9 @@ class DDS_FLAGS(IntEnum):
     def get_flags(is_compressed, is_3d):
         flags = DDS_FLAGS.DEFAULT
         if is_compressed:
-            flags |= DDS_FLAGS.PITCH
-        else:
             flags |= DDS_FLAGS.LINEARSIZE
+        else:
+            flags |= DDS_FLAGS.PITCH
         if is_3d:
             flags |= DDS_FLAGS.DEPTH
         return flags
@@ -343,9 +343,9 @@ class DDSHeader(c.LittleEndianStructure):
 
         self.flags = DDS_FLAGS.get_flags(self.is_compressed(), is_3d)
         if DDS_FLAGS.has_pitch(self.flags):
-            self.pitch_or_linear_size = int(self.width * self.height * bpp)
-        else:
             self.pitch_or_linear_size = int(self.width * bpp)
+        else:
+            self.pitch_or_linear_size = int(self.width * self.height * bpp)
         self.caps = DDS_CAPS.get_caps(has_mips, is_cube)
         self.caps2 = DDS_CAPS2.get_caps2(is_cube, is_3d)
 
@@ -354,7 +354,7 @@ class DDSHeader(c.LittleEndianStructure):
 
     def get_bpp(self):
         bpp = self.pitch_or_linear_size // self.width
-        if DDS_FLAGS.has_pitch(self.flags):
+        if not DDS_FLAGS.has_pitch(self.flags):
             bpp = bpp // self.height
         return bpp
 

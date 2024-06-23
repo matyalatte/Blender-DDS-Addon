@@ -1,3 +1,7 @@
+ver 0.4.2
+- Updated DirectXTex to June2024 release
+  (including fix for HDR codec to avoid buffer overread for some malformed files)
+- Updated astc-encoder to 4.8.0 release
 - Fixed a bug that exported dds files have wrong flags.
 
 ver 0.4.1

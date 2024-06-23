@@ -9,6 +9,9 @@ set VS_VERSION=Visual Studio 17 2022
 mkdir build
 cd build
 
+REM VS 2022 17.10 requires _DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR
+REM https://github.com/actions/runner-images/issues/10004
+
 cmake -G "%VS_VERSION%"^
  -A x64^
  -D CMAKE_CONFIGURATION_TYPES=Release^

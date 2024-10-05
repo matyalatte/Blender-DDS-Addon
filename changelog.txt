@@ -1,3 +1,6 @@
+ver 0.4.3
+- Fixed a bug where DLL changed locale settings on Windows.
+
 ver 0.4.2
 - Updated DirectXTex to June2024 release
   (including fix for HDR codec to avoid buffer overread for some malformed files)

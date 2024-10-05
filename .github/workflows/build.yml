@@ -43,7 +43,13 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-20.04, macos-11]
+        include:
+          - os: windows-2022
+            arch_suffix: -x64
+          - os: ubuntu-20.04
+            arch_suffix: -x64
+          - os: macos-14
+            arch_suffix: ""
     runs-on: ${{ matrix.os }}
     needs: setup
     steps:
@@ -84,10 +90,10 @@ jobs:
         with:
           directory: 'release'
           type: 'zip'
-          filename: '${{ env.ZIP_NAME }}_${{ needs.setup.outputs.tag }}_${{ runner.os }}.zip'
+          filename: '${{ env.ZIP_NAME }}_${{ needs.setup.outputs.tag }}_${{ runner.os }}${{ matrix.arch_suffix }}.zip'
           exclusions: '*.git* .gitignore'
 
       - name: Upload Release Asset
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ needs.setup.outputs.tag }} release/${{ env.ZIP_NAME }}_${{ needs.setup.outputs.tag }}_${{ runner.os }}.zip
+        run: gh release upload ${{ needs.setup.outputs.tag }} release/${{ env.ZIP_NAME }}_${{ needs.setup.outputs.tag }}_${{ runner.os }}${{ matrix.arch_suffix }}.zip

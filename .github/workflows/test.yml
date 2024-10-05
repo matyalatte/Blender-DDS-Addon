@@ -40,9 +40,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Test with 2.83, 3.3, 3.6, and 4.1 on Windows
+          # Test with 2.83, 3.3, 3.6, and 4.2 on Windows
           - platform: windows-latest
-            blender-version: '4.1.1'
+            blender-version: '4.2.2'
 
           - platform: windows-latest
             blender-version: '3.6.11'

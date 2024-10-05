@@ -43,7 +43,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-20.04, macos-11]
+        os: [windows-2022, ubuntu-20.04, macos-14]
     runs-on: ${{ matrix.os }}
     needs: setup
     steps:

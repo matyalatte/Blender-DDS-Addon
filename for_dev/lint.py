@@ -31,7 +31,7 @@ if __name__ == '__main__':
           f'Path: {path} | '
           f'Threshold: {threshold} ')
 
-    results = Run([path], do_exit=False)
+    results = Run([path], exit=False)
 
     score = results.linter.stats.global_note
     score_msg = f'Score: {score} | Threshold: {threshold} '

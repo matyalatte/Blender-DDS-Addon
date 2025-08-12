@@ -44,11 +44,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-2022
+          - os: windows-latest
             arch_suffix: -x64
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             arch_suffix: -x64
-          - os: macos-14
+          - os: macos-latest
             arch_suffix: ""
     runs-on: ${{ matrix.os }}
     needs: setup
@@ -56,10 +56,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: get sal.h (for Unix)
-        if: runner.os!='Windows'
-        run: bash external/Texconv-Custom-DLL/shell_scripts/get_sal.sh
 
       - name: build dll (for Windows)
         if: runner.os=='Windows'
@@ -69,13 +65,22 @@ jobs:
           external/build_astcenc.bat
           cp external/astc-encoder/astcenc-sse2-shared.dll addons/blender_dds_addon/astcenc
 
-      - name: build shared library (for Unix)
-        if: runner.os!='Windows'
+      - name: build shared library (for macOS)
+        if: runner.os=='macOS'
         run: |
           bash external/Texconv-Custom-DLL/shell_scripts/build_universal.sh
           cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon/directx
-          bash external/build_astcenc_${{ runner.os }}.sh
+          bash external/build_astcenc_macOS.sh
           cp external/astc-encoder/libastcenc* addons/blender_dds_addon/astcenc
+
+      - name: build shared library (for Linux)
+        if: runner.os=='Linux'
+        run: |
+          docker build -t blender_dds -f Dockerfile ./
+          docker run --name blender_dds blender_dds
+          docker cp blender_dds:/Blender-DDS-Addon/bin .
+          cp ./bin/libtexconv.* addons/blender_dds_addon/directx
+          cp ./bin/libastcenc* addons/blender_dds_addon/astcenc
 
       - name: Copy files
         run: |

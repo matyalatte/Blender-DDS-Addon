@@ -1,0 +1,12 @@
+.github
+.pytest_cache
+.gitignore
+batch_files
+external/astc-encoder
+external/Texconv-Custom-DLL
+docs
+*.exe
+*.dll
+*.so
+*.dylib
+*.blend*

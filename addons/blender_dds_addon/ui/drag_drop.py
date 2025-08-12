@@ -4,8 +4,8 @@ import traceback
 
 import bpy
 from .import_dds import import_dds
-from ..directx.texconv import Texconv, unload_texconv
-from ..astcenc.astcenc import Astcenc, unload_astcenc
+from ..directx.texconv import Texconv
+from ..astcenc.astcenc import Astcenc
 from .bpy_util import flush_stdout
 
 
@@ -58,10 +58,6 @@ class DDS_OT_drag_drop_import(bpy.types.Operator):
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
-
-        # release DLL resources
-        unload_texconv()
-        unload_astcenc()
 
         return ret
 

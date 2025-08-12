@@ -13,8 +13,8 @@ import numpy as np
 
 from ..directx.dds import is_hdr, DDS, DDSHeader
 from ..directx.dxgi_format import DXGI_FORMAT
-from ..directx.texconv import Texconv, unload_texconv
-from ..astcenc.astcenc import Astcenc, unload_astcenc
+from ..directx.texconv import Texconv
+from ..astcenc.astcenc import Astcenc
 from .bpy_util import (save_texture, texture_to_buffer, dxgi_to_dtype,
                        dds_properties_exist, get_image_editor_space, flush_stdout)
 from .texture_list import draw_texture_list
@@ -298,10 +298,6 @@ class DDS_OT_export_base(Operator):
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
-
-        # release DLL resources
-        unload_texconv()
-        unload_astcenc()
 
         return ret
 

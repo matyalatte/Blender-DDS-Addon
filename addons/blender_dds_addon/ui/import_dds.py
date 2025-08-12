@@ -13,8 +13,8 @@ from bpy_extras.io_utils import ImportHelper
 import numpy as np
 
 from ..directx.dds import DDSHeader, DDS
-from ..directx.texconv import Texconv, unload_texconv
-from ..astcenc.astcenc import Astcenc, unload_astcenc
+from ..directx.texconv import Texconv
+from ..astcenc.astcenc import Astcenc
 from .bpy_util import (get_image_editor_space,
                        load_texture, load_texture_from_buffer,
                        dds_properties_exist, flush_stdout, dxgi_to_dtype)
@@ -226,10 +226,6 @@ class DDS_OT_import_base(Operator):
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
-
-        # release DLL resources
-        unload_texconv()
-        unload_astcenc()
 
         return ret
 

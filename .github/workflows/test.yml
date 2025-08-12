@@ -40,34 +40,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Test with 2.83, 3.3, 3.6, and 4.2 on Windows
+          # Test with LTS versions on Windows
           - platform: windows-latest
-            blender-version: '4.2.2'
+            blender-version: '4.5.1'
 
           - platform: windows-latest
-            blender-version: '3.6.11'
+            blender-version: '4.2.11'
 
           - platform: windows-latest
-            blender-version: '3.3.18'
+            blender-version: '3.6.23'
+
+          - platform: windows-latest
+            blender-version: '3.3.21'
 
           - platform: windows-latest
             blender-version: '2.83.20'
 
-          # Test with 3.6 on Unix/Linux systems
+          # Test with 4.2 on Unix/Linux systems
           - platform: ubuntu-latest
-            blender-version: '3.6.11'
+            blender-version: '4.2.11'
 
           - platform: macos-latest
-            blender-version: '3.6.11'
+            blender-version: '4.2.11'
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: get sal.h (for Unix)
-        if: runner.os!='Windows'
-        run: bash external/Texconv-Custom-DLL/shell_scripts/get_sal.sh
 
       - name: build dll (for Windows)
         if: runner.os=='Windows'

@@ -10,7 +10,7 @@ In [`for_dev`](../for_dev) folder, there are some python scripts to test the add
 ## Flake8
 
 [Flake8](https://flake8.pycqa.org/en/latest/) is a tool for style guide enforcement.  
-It will check if you are following [PEP8](https://peps.python.org/pep-0008/).  
+It checks if you are following [PEP8](https://peps.python.org/pep-0008/).  
 Install it with `pip install flake8`.  
 Then, type `flake8` in `./Blender-DDS-Addon`.  
 You should get no messages from flake8.  

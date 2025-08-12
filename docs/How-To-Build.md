@@ -4,43 +4,24 @@ If you want to make a zip from the repository, you should do the following steps
 
 ## 0. Requirements
 
-### Platforms
+- c++17 compiler
+- CMake 3.20 or later
+- git
+- Visual Studio 2022 (for Windows)
 
-Make sure that [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL#platform) supports your platform.  
-
-### for Windows
-
-- Visual Studio 2022
-- CMake
-
-If you won't use Visual Studio 2022, you could need to edit cmake commands in batch files.
-
-### for Unix/Lunux
-
-- xcode (for macOS)
-- build-essential (for Ubuntu)
-- cmake
-- wget
+> [!Note]
+> If you won't use Visual Studio 2022 on Windows, you could need to edit cmake commands in batch files.
 
 ## 1. Download Submodules
 
-Move to `./Blender-DDS-Addon`.  
-Then, type `git submodule update --init --recursive`.  
-It'll clone external repositories to the addon's repo.
+Move to `./Blender-DDS-Addon` and type `git submodule update --init --recursive`.  
+It clones external repositories to the addon's repo.
 
-## 2. Get `sal.h` (for Unix/Linux systems)
-
-If you are using non-Windows platforms, you should download [sal.h](https://github.com/dotnet/corert/blob/master/src/Native/inc/unix/sal.h)
-for DirectXMath.  
-Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL/shell_scripts`.  
-Then, type `bash get_sal.sh`.  
-It'll download the file and place it in a proper location.  
-
-## 3. Build Texconv
+## 2. Build Texconv
 
 Move to `./Blender-DDS-Addon/external/Texconv-Custom-DLL`.  
-Then, run `batch_files/build_without_vcruntime.bat` or `bash shell_scripts/build_universal.sh`
-`texconv.dll` or `libtexconv.*` will be generated in `./Blender-DDS-Addon/external/Texconv-Custom-DLL/`  
+Then, run `batch_files/build_without_vcruntime.bat` or `bash shell_scripts/build_universal.sh`.  
+It generates `texconv.dll` or `libtexconv.*` in `./Blender-DDS-Addon/external/Texconv-Custom-DLL/`  
 
 ## 4. Copy Texconv
 
@@ -50,7 +31,7 @@ Copy the built binary (`texconv.dll`, `libtexconv.dylib` or `libtexconv.so`) to 
 
 Move to `C:\Users\nk0902\git\Blender-DDS-Addon\external`.  
 Then, run `build_astcenc.bat`, `build_astcenc_Linux.sh`, or `build_astcenc_macOS.sh`.  
-`astcenc-*.dll` or `libastcenc-*.*` will be generated in `./Blender-DDS-Addon/external/astc-encoder/`  
+It generates `astcenc-*.dll` or `libastcenc-*.*` in `./Blender-DDS-Addon/external/astc-encoder/`  
 
 ## 6. Copy astcenc
 

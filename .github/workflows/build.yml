@@ -46,6 +46,8 @@ jobs:
         include:
           - os: windows-latest
             arch_suffix: -x64
+          - os: windows-11-arm
+            arch_suffix: -arm64
           - os: ubuntu-latest
             arch_suffix: -x64
           - os: macos-latest
@@ -63,7 +65,7 @@ jobs:
           external/Texconv-Custom-DLL/batch_files/build_without_vcruntime.bat
           cp external/Texconv-Custom-DLL/texconv.dll addons/blender_dds_addon/directx
           external/build_astcenc.bat
-          cp external/astc-encoder/astcenc-sse2-shared.dll addons/blender_dds_addon/astcenc
+          cp external/astc-encoder/astcenc-*-shared.dll addons/blender_dds_addon/astcenc
 
       - name: build shared library (for macOS)
         if: runner.os=='macOS'

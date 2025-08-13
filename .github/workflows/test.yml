@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
     env:
       pytest-version: '7.1.2'
-      python-version: '3.10'
+      python-version: '3.11'
     strategy:
       fail-fast: false
       matrix:
@@ -56,17 +56,29 @@ jobs:
           - platform: windows-latest
             blender-version: '2.83.20'
 
-          # Test with 4.2 on Unix/Linux systems
+          # Test on Unix/Linux systems
           - platform: ubuntu-latest
             blender-version: '4.2.11'
 
           - platform: macos-latest
             blender-version: '4.2.11'
 
+          # Test on Windows arm64
+          - platform: windows-11-arm
+            blender-version: '4.5.1'
+
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: set arch
+        id: set-arch
+        run: |
+          if [[ "${{ runner.arch }}" == "ARM64" ]]; then
+            echo "arch_opt=--arch arm64 " >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
 
       - name: build dll (for Windows)
         if: runner.os=='Windows'
@@ -74,7 +86,7 @@ jobs:
           external/Texconv-Custom-DLL/batch_files/build_without_vcruntime.bat
           cp external/Texconv-Custom-DLL/texconv.dll addons/blender_dds_addon/directx
           external/build_astcenc.bat
-          cp external/astc-encoder/astcenc-sse2-shared.dll addons/blender_dds_addon/astcenc
+          cp external/astc-encoder/astcenc-*-shared.dll addons/blender_dds_addon/astcenc
 
       - name: build shared library (for Unix)
         if: runner.os!='Windows'
@@ -99,7 +111,7 @@ jobs:
           path: |
             blender-*
             _blender-executable-path.txt
-          key: blender-${{ runner.os }}-${{ matrix.blender-version }}
+          key: blender-${{ runner.os }}-${{ runner.arch }}-${{ matrix.blender-version }}
 
       # Download Blender on Windows
       - name: Download Blender ${{ matrix.blender-version }}
@@ -109,7 +121,7 @@ jobs:
         run: |
           python -m pip install --upgrade blender-downloader
           python -m pip list
-          blender-downloader ${{ matrix.blender-version }} --extract --remove-compressed --print-blender-executable --quiet | Out-File -FilePath _blender-executable-path.txt
+          blender-downloader ${{ matrix.blender-version }} ${{ steps.set-arch.outputs.arch_opt }}--extract --remove-compressed --print-blender-executable --quiet | Out-File -FilePath _blender-executable-path.txt
           get-content _blender-executable-path.txt
 
       # Download Blender on Linux and MacOS
@@ -121,7 +133,7 @@ jobs:
           set -x
           python -m pip install --upgrade blender-downloader
           python -m pip list
-          printf "%s" "$(blender-downloader ${{ matrix.blender-version }} --extract --remove-compressed --print-blender-executable --quiet)" > _blender-executable-path.txt
+          printf "%s" "$(blender-downloader ${{ matrix.blender-version }} ${{ steps.set-arch.outputs.arch_opt }}--extract --remove-compressed --print-blender-executable --quiet)" > _blender-executable-path.txt
           cat _blender-executable-path.txt
 
       # Install dependencies on Windows

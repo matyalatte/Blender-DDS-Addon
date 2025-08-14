@@ -63,6 +63,7 @@ cube_layouts = {
 
 
 def load_texture_from_buffer(name, width, height, buffers, dtype,
+                             premultiplied_alpha=False,
                              cubemap_layout='h-cross', color_space='Non-Color'):
     """Load a texture file from buffers.
 
@@ -73,6 +74,7 @@ def load_texture_from_buffer(name, width, height, buffers, dtype,
         buffers (list[byte]): binary data for pixels.
                               A buffer for a 2d image, Six buffers for a cubemap.
         dtype : a data type object for numpy
+        premultiplied_alpha (bool): Convert premultiplied alpha to straight alpha.
         cubemap_layout (string): layout for cubemaps
         color_space (string): color space
 
@@ -85,7 +87,6 @@ def load_texture_from_buffer(name, width, height, buffers, dtype,
         tex.colorspace_settings.name = color_space
         pixels = np.frombuffer(buffers[0], dtype=dtype).reshape((height, width, -1))
         pixels = pixels[::-1]
-        tex.pixels = list(pixels.flatten())
     else:
         layout = cube_layouts[cubemap_layout]
         tex = bpy.data.images.new(name, width * layout[1], height * layout[0], float_buffer=float_buffer)
@@ -95,6 +96,14 @@ def load_texture_from_buffer(name, width, height, buffers, dtype,
             face = np.frombuffer(buf, dtype=dtype).reshape((height, width, -1))
             face = face[::-1]
             pixels[height * pos[0]: height * (pos[0] + 1), width * pos[1]: width * (pos[1] + 1), ::] = face
+
+    if premultiplied_alpha:
+        rgb = pixels[..., :3]
+        alpha = pixels[..., 3:4]
+        out = pixels.copy()
+        out[..., :3] = np.where(alpha > 0, pixels[..., :3] / alpha, pixels[..., :3])
+        tex.pixels = list(out.flatten())
+    else:
         tex.pixels = list(pixels.flatten())
     return tex
 

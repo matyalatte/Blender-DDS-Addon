@@ -110,17 +110,77 @@ def test_io_snorm():
     os.remove("saved.dds")
 
 
+def get_first_pixel(tex):
+    width, height = tex.size
+    return np.array(tex.pixels[(height - 1) * width * 4: (height - 1) * width * 4 + 4], dtype=np.float16)
+
+
+def pixel_comp(pixel, expected, tol=1e-03):
+    return np.isclose(pixel, expected, rtol=tol, atol=tol).all()
+
+
 def test_float_alpha():
     """Test if the addon preserve alpha for HDR textures."""
     tex = import_dds.load_dds(os.path.join("tests", "rgba16_float.dds"))
+    raw_pixel = get_first_pixel(tex)
+    assert pixel_comp(raw_pixel, [0.098, 0.4353, 0.0353, 0.502])
     tex = export_dds.save_dds(tex, "saved.dds", "R16G16B16A16_FLOAT",
                               texture_type="2d")
     dds = DDS.load("saved.dds")
     assert dds.header.has_mips()
     buffer = dds.slice_bin_list[0]
     pixel = np.frombuffer(buffer[:8], dtype=np.float16)
-    alpha = pixel[3]
-    assert 0.49 < alpha and alpha < 0.51
+    assert pixel_comp(pixel, [0.098, 0.4353, 0.0353, 0.502])
+    os.remove("saved.dds")
+
+
+def test_float_premultiplied_alpha():
+    """Test if the addon handle premultiplied alpha for HDR textures."""
+    # Check the default RGBA
+    dds = DDS.load(os.path.join("tests", "rgba16_float.dds"))
+    buffer = dds.slice_bin_list[0]
+    pixel = np.frombuffer(buffer[:8], dtype=np.float16)
+    expected = np.array([0.098, 0.4353, 0.0353, 0.502], dtype=np.float16)
+    assert pixel_comp(pixel, expected)
+
+    # RGB should be divided by alpha when importing
+    tex = import_dds.load_dds(os.path.join("tests", "rgba16_float.dds"), premultiplied_alpha=True)
+    fixed_pixel = get_first_pixel(tex)
+    expected[:3] /= expected[3]
+    assert pixel_comp(fixed_pixel, expected)
+
+    # RGB should be multiplied by alpha when exporting
+    tex = export_dds.save_dds(tex, "saved.dds", "R16G16B16A16_FLOAT",
+                              texture_type="2d", premultiplied_alpha=True)
+    dds = DDS.load("saved.dds")
+    buffer = dds.slice_bin_list[0]
+    pixel = np.frombuffer(buffer[:8], dtype=np.float16)
+    expected[:3] *= expected[3]
+    assert pixel_comp(pixel, expected)
+
+    os.remove("saved.dds")
+
+def test_bc3_premultiplied_alpha():
+    """Test if the addon handle premultiplied alpha for LDR textures."""
+    # Check the default RGBA
+    tex = import_dds.load_dds(os.path.join("tests", "premultiplied_alpha.dds"))
+    raw_pixel = get_first_pixel(tex)
+    expected = np.array([0.0627, 0.3176, 0.0314, 0.7490], dtype=np.float16)
+    assert pixel_comp(raw_pixel, expected)
+
+    # RGB should be divided by alpha when importing
+    tex = import_dds.load_dds(os.path.join("tests", "premultiplied_alpha.dds"), premultiplied_alpha=True)
+    fixed_pixel = get_first_pixel(tex)
+    raw_pixel[:3] /= raw_pixel[3]
+    assert pixel_comp(fixed_pixel, raw_pixel, tol=1/255)
+
+    # RGB should be multiplied by alpha when exporting
+    tex = export_dds.save_dds(tex, "saved.dds", "BC3_UNORM",
+                              texture_type="2d", premultiplied_alpha=True)
+    tex = import_dds.load_dds("saved.dds")
+    raw_pixel = get_first_pixel(tex)
+    assert pixel_comp(raw_pixel, expected)
+
     os.remove("saved.dds")
 
 

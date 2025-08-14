@@ -77,6 +77,24 @@ class DDSPropBase:
     list_index: IntProperty(name="An extra texture for texture arrays or volume textures", default=0)
 
 
+def colorspace_items():
+    """Dynamically list all available color spaces from Blender"""
+    items = []
+    for cs in bpy.types.Image.bl_rna.properties['colorspace_settings'] \
+                .fixed_type.properties['name'].enum_items:
+        items.append((cs.identifier, cs.name, cs.description))
+    return items
+
+def colorspace_hdr_default():
+    """Get default colorspace for HDR textures"""
+    items = []
+    for cs in bpy.types.Image.bl_rna.properties['colorspace_settings'] \
+                .fixed_type.properties['name'].enum_items:
+        if cs.identifier in ('Linear Rec.709', 'Linear'):
+            return cs.identifier
+    return 'Non-Color'
+
+
 class DDSOptions(DDSPropBase, PropertyGroup):
     """Properties for operations."""
     dxgi_format: EnumProperty(
@@ -110,6 +128,19 @@ class DDSOptions(DDSPropBase, PropertyGroup):
         default=False,
     )
 
+    colorspace: EnumProperty(
+        name="Color Space",
+        description="Color space for LDR textures",
+        items=colorspace_items(),
+        default='sRGB'
+    )
+
+    colorspace_hdr: EnumProperty(
+        name="HDR Color Space",
+        description="Color space for HDR textures",
+        items=colorspace_items(),
+        default=colorspace_hdr_default()
+    )
 
 class DDSCustomProperties(DDSPropBase, PropertyGroup):
     """Properties for dds info."""

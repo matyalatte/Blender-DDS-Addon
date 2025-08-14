@@ -45,6 +45,7 @@ def load_dds_via_tga(texconv, file, out_dir, cubemap_layout='h-cross', invert_no
 
 
 def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
+             colorspace_ldr='sRGB', colorspace_hdr='Non-Color',
              texconv=None, astcenc=None):
     """Import a texture form .dds file.
 
@@ -52,6 +53,8 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
         file (string): file path to .dds file
         invert_normals (bool): Flip y axis if the texture is normal map.
         cubemap_layout (string): Layout for cubemap faces.
+        colorspace_ldr: Color space for LDR textures.
+        colorspace_hdr: Color space for HDR textures.
         texconv (Texconv): Texture converter for dds.
         astcenc (Astcenc): Astc converter.
 
@@ -78,10 +81,10 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
                 dds.save(temp)
 
             # Check dxgi_format
-            if dds_header.is_srgb():
-                color_space = 'sRGB'
+            if dds_header.is_hdr():
+                color_space = colorspace_hdr
             else:
-                color_space = 'Non-Color'
+                color_space = colorspace_ldr
 
             fmt = dds_header.get_format_as_str()
 
@@ -160,6 +163,7 @@ def import_dds(context, file, texconv=None, astcenc=None):
     dds_options = context.scene.dds_options
     tex = load_dds(file, invert_normals=dds_options.invert_normals,
                    cubemap_layout=dds_options.cubemap_layout,
+                   colorspace_ldr=dds_options.colorspace, colorspace_hdr=dds_options.colorspace_hdr,
                    texconv=texconv, astcenc=astcenc)
     if space:
         space.image = tex
@@ -189,6 +193,8 @@ class DDS_OT_import_base(Operator):
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
         layout.prop(dds_options, 'cubemap_layout')
+        layout.prop(dds_options, 'colorspace')
+        layout.prop(dds_options, 'colorspace_hdr')
 
     def execute_base(self, context, files=None, directory=None, is_dir=False):
         if directory is None:
@@ -287,6 +293,8 @@ class DDS_PT_import_panel(bpy.types.Panel):
         dds_options = context.scene.dds_options
         layout.prop(dds_options, 'invert_normals')
         layout.prop(dds_options, 'cubemap_layout')
+        layout.prop(dds_options, 'colorspace')
+        layout.prop(dds_options, 'colorspace_hdr')
 
 
 classes = (

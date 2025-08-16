@@ -1,3 +1,14 @@
+ver 0.5.0
+- Fixed a crash in Blender 4.5 after exporting textures. (#34)
+- Added options to change the color space of imported textures. (#37)
+  The DDS addon now defaults LDR textures to sRGB.
+- Added an option to handle premultiplied alpha. (#38)
+- Added support for Windows on ARM64. (#36)
+- Updated submodules. (#35)
+  - DirectXTex: from June2024 to July2025.
+  - astc-encoder: from 4.8.0 to 5.3.0.
+- Options are now grouped in collapsible boxes. (#39)
+
 ver 0.4.3
 - Fixed a bug where DLL changed locale settings on Windows.
 

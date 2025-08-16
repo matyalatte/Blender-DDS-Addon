@@ -1,4 +1,4 @@
-# Blender-DDS-Addon v0.4.3
+# Blender-DDS-Addon v0.5.0
 
 [![Github All Releases](https://img.shields.io/github/downloads/matyalatte/Blender-DDS-Addon/total.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -6,7 +6,7 @@
 
 Blender addon to import and export dds textures  
   
-![Screenshot](https://user-images.githubusercontent.com/69258547/194742234-9021612e-a49e-4b92-a92c-234678b7a298.png)  
+![Screenshot](https://github.com/user-attachments/assets/1e799e6c-ba5e-48b9-bbf4-0908fc5b4c54)  
 
 ## Features
 
@@ -14,16 +14,15 @@ Blender addon to import and export dds textures
 - Export textures as DDS
 - Support many DXGI formats (including BC6, BC7, and ASTC)
 - Support non-2D textures (cubemaps, arrays, and volume textures)
+- Some utilities (invert normals, edit texture arrays, etc.)
 
 ## Download
 
 You can download zip files from [the release page](https://github.com/matyalatte/Blender-DDS-Addon/releases).  
 
--   `blender_dds_addon*_Windows.zip` is for Windows.
+-   `blender_dds_addon*_Windows-*.zip` is for Windows.
 -   `blender_dds_addon*_macOS.zip` is for Mac (10.15 or later).
--   `blender_dds_addon*_Linux.zip` is for Linux with GLIBC 2.27+ and GLIBCXX 3.4.26+.
-
-> The linux build only supports distributions using GLIBC and GLIBCXX.  
+-   `blender_dds_addon*_Linux-x64.zip` is for Linux with GLIBC 2.27+ and GLIBCXX 3.4.26+.
 
 ## Getting Started
 
@@ -156,9 +155,7 @@ See wiki pages for the details.
 ### Texconv-Custom-DLL
 
 [Texconv](https://github.com/microsoft/DirectXTex/wiki/Texconv)
-is a texture converter developed by Microsoft.  
-It's the best DDS converter as far as I know.  
-And [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL) is a cross-platform implementation I made.  
+is a texture converter developed by Microsoft, and [Texconv-Custom-DLL](https://github.com/matyalatte/Texconv-Custom-DLL) is a cross-platform implementation I made.  
 The official Texconv only supports Windows but you can use it on Unix/Linux systems.  
 It is released under the [MIT license](../LICENSE).
 

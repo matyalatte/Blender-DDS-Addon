@@ -81,15 +81,15 @@ def colorspace_items():
     """Dynamically list all available color spaces from Blender"""
     items = []
     for cs in bpy.types.Image.bl_rna.properties['colorspace_settings'] \
-                .fixed_type.properties['name'].enum_items:
+            .fixed_type.properties['name'].enum_items:
         items.append((cs.identifier, cs.name, cs.description))
     return items
 
+
 def colorspace_hdr_default():
     """Get default colorspace for HDR textures"""
-    items = []
     for cs in bpy.types.Image.bl_rna.properties['colorspace_settings'] \
-                .fixed_type.properties['name'].enum_items:
+            .fixed_type.properties['name'].enum_items:
         if cs.identifier in ('Linear Rec.709', 'Linear'):
             return cs.identifier
     return 'Non-Color'
@@ -148,6 +148,13 @@ class DDSOptions(DDSPropBase, PropertyGroup):
         default=colorspace_hdr_default()
     )
 
+
+class DDSPanelFlags(PropertyGroup):
+    """Flags to manage tabs."""
+    ui_import_opt: BoolProperty(name='Options', default=False)
+    ui_export_opt: BoolProperty(name='Options', default=False)
+
+
 class DDSCustomProperties(DDSPropBase, PropertyGroup):
     """Properties for dds info."""
     dxgi_format: EnumProperty(
@@ -198,6 +205,7 @@ class DDS_PT_property_panel(bpy.types.Panel):
 
 classes = (
     DDSOptions,
+    DDSPanelFlags,
     DDSCustomProperties,
     DDS_PT_property_panel,
 )
@@ -208,6 +216,7 @@ def register():
     for c in classes:
         bpy.utils.register_class(c)
     bpy.types.Scene.dds_options = PointerProperty(type=DDSOptions)
+    bpy.types.WindowManager.dds_panel_flags = PointerProperty(type=DDSPanelFlags)
     add_custom_props_for_dds()
 
 
@@ -216,4 +225,5 @@ def unregister():
     for c in classes:
         bpy.utils.unregister_class(c)
     del bpy.types.Scene.dds_options
+    del bpy.types.WindowManager.dds_panel_flags
     remove_custom_props_for_dds()

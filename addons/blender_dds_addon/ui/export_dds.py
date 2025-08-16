@@ -353,7 +353,18 @@ class DDS_PT_export_panel(bpy.types.Panel):
         layout = self.layout
         layout.operator(DDS_OT_export_dds.bl_idname, icon='TEXTURE_DATA')
         layout.operator(DDS_OT_export_all.bl_idname, icon='TEXTURE_DATA')
-        put_export_options(context, layout)
+
+        # Draw options tab
+        win_m = bpy.context.window_manager.dds_panel_flags
+        show_flag = win_m.ui_export_opt
+        box = layout.box()
+        row = box.row(align=True)
+        row.alignment = 'LEFT'
+        row.prop(win_m, 'ui_export_opt', icon='DOWNARROW_HLT' if show_flag else 'RIGHTARROW', emboss=False)
+        if show_flag:
+            box.use_property_split = True
+            box.use_property_decorate = False
+            put_export_options(context, box)
 
 
 classes = (

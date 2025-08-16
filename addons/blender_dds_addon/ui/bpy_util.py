@@ -98,7 +98,6 @@ def load_texture_from_buffer(name, width, height, buffers, dtype,
             pixels[height * pos[0]: height * (pos[0] + 1), width * pos[1]: width * (pos[1] + 1), ::] = face
 
     if premultiplied_alpha:
-        rgb = pixels[..., :3]
         alpha = pixels[..., 3:4]
         out = pixels.copy()
         out[..., :3] = np.where(alpha > 0, pixels[..., :3] / alpha, pixels[..., :3])

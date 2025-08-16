@@ -160,6 +160,7 @@ def test_float_premultiplied_alpha():
 
     os.remove("saved.dds")
 
+
 def test_bc3_premultiplied_alpha():
     """Test if the addon handle premultiplied alpha for LDR textures."""
     # Check the default RGBA

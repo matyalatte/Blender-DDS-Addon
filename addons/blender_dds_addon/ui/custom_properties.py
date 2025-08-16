@@ -81,15 +81,15 @@ def colorspace_items():
     """Dynamically list all available color spaces from Blender"""
     items = []
     for cs in bpy.types.Image.bl_rna.properties['colorspace_settings'] \
-                .fixed_type.properties['name'].enum_items:
+            .fixed_type.properties['name'].enum_items:
         items.append((cs.identifier, cs.name, cs.description))
     return items
 
+
 def colorspace_hdr_default():
     """Get default colorspace for HDR textures"""
-    items = []
     for cs in bpy.types.Image.bl_rna.properties['colorspace_settings'] \
-                .fixed_type.properties['name'].enum_items:
+            .fixed_type.properties['name'].enum_items:
         if cs.identifier in ('Linear Rec.709', 'Linear'):
             return cs.identifier
     return 'Non-Color'

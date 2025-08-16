@@ -29,7 +29,7 @@ Copy the built binary (`texconv.dll`, `libtexconv.dylib` or `libtexconv.so`) to 
 
 ## 5. Build astc-encoder
 
-Move to `C:\Users\nk0902\git\Blender-DDS-Addon\external`.  
+Move to `./Blender-DDS-Addon/external`.  
 Then, run `build_astcenc.bat`, `build_astcenc_Linux.sh`, or `build_astcenc_macOS.sh`.  
 It generates `astcenc-*.dll` or `libastcenc-*.*` in `./Blender-DDS-Addon/external/astc-encoder/`  
 

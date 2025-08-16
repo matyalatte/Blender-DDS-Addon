@@ -128,6 +128,12 @@ class DDSOptions(DDSPropBase, PropertyGroup):
         default=False,
     )
 
+    premultiplied_alpha: BoolProperty(
+        name='Premultiplied Alpha',
+        description=("Divide RGB by alpha when importing, Multiply alpha to RGB when exporting"),
+        default=False,
+    )
+
     colorspace: EnumProperty(
         name="Color Space",
         description="Color space for LDR textures",

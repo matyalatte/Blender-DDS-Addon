@@ -21,7 +21,8 @@ from .bpy_util import (get_image_editor_space,
 from .custom_properties import DDS_FMT_NAMES
 
 
-def load_uncompressed_dds(file, cubemap_layout='h-cross', color_space='Non-Color'):
+def load_uncompressed_dds(file, cubemap_layout='h-cross',
+                          premultiplied_alpha=False, color_space='Non-Color'):
     dds = DDS.load(file)
     w, h = dds.header.width, dds.header.height
     bpb = dds.header.get_byte_per_block()
@@ -30,21 +31,25 @@ def load_uncompressed_dds(file, cubemap_layout='h-cross', color_space='Non-Color
     tex = load_texture_from_buffer(os.path.basename(file)[:-4],
                                    w, h, buffers,
                                    dxgi_to_dtype(fmt),
+                                   premultiplied_alpha=premultiplied_alpha,
                                    cubemap_layout=cubemap_layout,
                                    color_space=color_space)
     return tex
 
 
-def load_dds_via_tga(texconv, file, out_dir, cubemap_layout='h-cross', invert_normals=False, color_space='Non-Color'):
+def load_dds_via_tga(texconv, file, out_dir, cubemap_layout='h-cross',
+                     invert_normals=False, premultiplied_alpha=False, color_space='Non-Color'):
     tga = texconv.convert_to_tga(file, out=out_dir, cubemap_layout=cubemap_layout,
-                                 invert_normals=invert_normals)
+                                 invert_normals=invert_normals, premultiplied_alpha=premultiplied_alpha)
     if tga is None:
         raise RuntimeError('Failed to convert texture.')
     tex = load_texture(tga, name=os.path.basename(tga)[:-4], color_space=color_space)
     return tex
 
 
-def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
+def load_dds(file, invert_normals=False,
+             premultiplied_alpha=False,
+             cubemap_layout='h-cross',
              colorspace_ldr='sRGB', colorspace_hdr='Non-Color',
              texconv=None, astcenc=None):
     """Import a texture form .dds file.
@@ -52,6 +57,7 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
     Args:
         file (string): file path to .dds file
         invert_normals (bool): Flip y axis if the texture is normal map.
+        premultiplied_alpha (bool): Convert premultiplied alpha to straight alpha.
         cubemap_layout (string): Layout for cubemap faces.
         colorspace_ldr: Color space for LDR textures.
         colorspace_hdr: Color space for HDR textures.
@@ -102,18 +108,24 @@ def load_dds(file, invert_normals=False, cubemap_layout='h-cross',
                     new_dds.save(new_path)
                     if fmt == "R32G32B32A32_FLOAT" or fmt == "R16G16B16A16_FLOAT":
                         tex = load_uncompressed_dds(new_path, cubemap_layout=cubemap_layout,
+                                                    premultiplied_alpha=premultiplied_alpha,
                                                     color_space=color_space)
                     else:
                         tex = load_dds_via_tga(texconv, new_path, temp_dir, cubemap_layout=cubemap_layout,
-                                               invert_normals=invert_normals, color_space=color_space)
+                                               invert_normals=invert_normals,
+                                               premultiplied_alpha=premultiplied_alpha,
+                                               color_space=color_space)
                     tex_list.append(tex)
             else:
                 if fmt == "R32G32B32A32_FLOAT" or fmt == "R16G16B16A16_FLOAT":
                     tex = load_uncompressed_dds(temp, cubemap_layout=cubemap_layout,
+                                                premultiplied_alpha=premultiplied_alpha,
                                                 color_space=color_space)
                 else:
                     tex = load_dds_via_tga(texconv, temp, temp_dir, cubemap_layout=cubemap_layout,
-                                           invert_normals=invert_normals, color_space=color_space)
+                                           invert_normals=invert_normals,
+                                           premultiplied_alpha=premultiplied_alpha,
+                                           color_space=color_space)
                 tex_list.append(tex)
 
         tex = tex_list[0]
@@ -162,6 +174,7 @@ def import_dds(context, file, texconv=None, astcenc=None):
     space = get_image_editor_space(context)
     dds_options = context.scene.dds_options
     tex = load_dds(file, invert_normals=dds_options.invert_normals,
+                   premultiplied_alpha=dds_options.premultiplied_alpha,
                    cubemap_layout=dds_options.cubemap_layout,
                    colorspace_ldr=dds_options.colorspace, colorspace_hdr=dds_options.colorspace_hdr,
                    texconv=texconv, astcenc=astcenc)
@@ -182,6 +195,15 @@ def import_dds_rec(context, folder, texconv=None, astcenc=None):
     return count
 
 
+def put_import_options(layout, context):
+    dds_options = context.scene.dds_options
+    layout.prop(dds_options, 'invert_normals')
+    layout.prop(dds_options, 'premultiplied_alpha')
+    layout.prop(dds_options, 'cubemap_layout')
+    layout.prop(dds_options, 'colorspace')
+    layout.prop(dds_options, 'colorspace_hdr')
+
+
 class DDS_OT_import_base(Operator):
     """Base class for imoprt operators."""
 
@@ -190,11 +212,7 @@ class DDS_OT_import_base(Operator):
         layout = self.layout
         layout.use_property_split = False
         layout.use_property_decorate = False
-        dds_options = context.scene.dds_options
-        layout.prop(dds_options, 'invert_normals')
-        layout.prop(dds_options, 'cubemap_layout')
-        layout.prop(dds_options, 'colorspace')
-        layout.prop(dds_options, 'colorspace_hdr')
+        put_import_options(layout, context)
 
     def execute_base(self, context, files=None, directory=None, is_dir=False):
         if directory is None:
@@ -290,11 +308,7 @@ class DDS_PT_import_panel(bpy.types.Panel):
         layout = self.layout
         layout.operator(DDS_OT_import_dds.bl_idname, icon='TEXTURE_DATA')
         layout.operator(DDS_OT_import_dir.bl_idname, icon='TEXTURE_DATA')
-        dds_options = context.scene.dds_options
-        layout.prop(dds_options, 'invert_normals')
-        layout.prop(dds_options, 'cubemap_layout')
-        layout.prop(dds_options, 'colorspace')
-        layout.prop(dds_options, 'colorspace_hdr')
+        put_import_options(layout, context)
 
 
 classes = (

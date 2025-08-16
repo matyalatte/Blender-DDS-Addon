@@ -55,7 +55,8 @@ class Texconv:
         unload_texconv()
         self.dll = None
 
-    def convert_to_tga(self, file, out=None, cubemap_layout="h-cross", invert_normals=False, verbose=True):
+    def convert_to_tga(self, file, out=None, cubemap_layout="h-cross",
+                       invert_normals=False, premultiplied_alpha=False, verbose=True):
         """Convert dds to tga."""
         if self.dll is None:
             raise RuntimeError("texconv is unloaded.")
@@ -94,6 +95,9 @@ class Texconv:
             msg = f'Int format detected. ({dds_header.get_format_as_str()})\n It might not be converted correctly.'
             print(msg)
 
+        if premultiplied_alpha:
+            args += ['-alpha']
+
         if not dds_header.is_cube():
             args += ['-ft', fmt]
 
@@ -114,7 +118,9 @@ class Texconv:
         return name
 
     def convert_to_dds(self, file, dds_fmt, out=None,
-                       invert_normals=False, no_mip=False,
+                       invert_normals=False,
+                       premultiplied_alpha=False,
+                       no_mip=False,
                        image_filter="LINEAR",
                        export_as_cubemap=False,
                        cubemap_layout="h-cross",
@@ -149,8 +155,8 @@ class Texconv:
         if is_signed(dds_fmt):
             args += ['-x2bias']
 
-        if "SRGB" in dds_fmt:
-            args += ['-srgb']
+        if premultiplied_alpha:
+            args += ['-pmalpha']
 
         if ("BC5" in dds_fmt) and invert_normals:
             args += ['-inverty']

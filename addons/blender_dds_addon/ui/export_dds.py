@@ -22,6 +22,7 @@ from .texture_list import draw_texture_list
 
 def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
              image_filter='LINEAR',
+             premultiplied_alpha=False,
              allow_slow_codec=False,
              texture_type="2d",
              cubemap_layout='h-cross',
@@ -58,15 +59,6 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
             dds_fmt = "B8G8R8A8_UNORM_SRGB"
         else:
             dds_fmt = "B8G8R8A8_UNORM"
-
-    # Check color space
-    color_space = tex.colorspace_settings.name
-    if is_srgb and color_space != 'sRGB':
-        print("Warning: Specified DXGI format uses sRGB as a color space,"
-              f"but the texture uses {color_space} in Blender")
-    elif (not is_srgb) and color_space not in {'Non-Color', 'Raw'}:
-        print("Warning: Specified DXGI format does not use any color space conversion,"
-              f"but the texture uses {color_space} in Blender")
 
     if is_hdr(dds_fmt):
         ext = '.hdr'
@@ -131,7 +123,9 @@ def save_dds(tex, file, dds_fmt, invert_normals=False, no_mip=False,
             save_texture(tex, temp, fmt)
 
         temp_dds = texconv.convert_to_dds(temp, dds_fmt, out=temp_dir,
-                                          invert_normals=invert_normals, no_mip=no_mip,
+                                          invert_normals=invert_normals,
+                                          premultiplied_alpha=premultiplied_alpha,
+                                          no_mip=no_mip,
                                           image_filter=image_filter,
                                           export_as_cubemap=is_cube,
                                           cubemap_layout=cubemap_layout,
@@ -217,6 +211,7 @@ def export_as_dds(context, tex, file, texconv=None, astcenc=None):
     save_dds(tex, file, dxgi,
              invert_normals=dds_options.invert_normals, no_mip=no_mip,
              image_filter=dds_options.image_filter,
+             premultiplied_alpha=dds_options.premultiplied_alpha,
              allow_slow_codec=dds_options.allow_slow_codec,
              texture_type=texture_type,
              cubemap_layout=cubemap_layout,
@@ -230,6 +225,7 @@ def put_export_options(context, layout):
         layout.prop(dds_options, 'dxgi_format')
     layout.prop(dds_options, 'image_filter')
     layout.prop(dds_options, 'invert_normals')
+    layout.prop(dds_options, 'premultiplied_alpha')
     if not dds_properties_exist():
         layout.prop(dds_options, 'no_mip')
         layout.prop(dds_options, 'texture_type')

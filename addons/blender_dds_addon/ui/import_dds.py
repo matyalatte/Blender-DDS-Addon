@@ -195,7 +195,7 @@ def import_dds_rec(context, folder, texconv=None, astcenc=None):
     return count
 
 
-def put_import_options(layout, context):
+def put_import_options(context, layout):
     dds_options = context.scene.dds_options
     layout.prop(dds_options, 'invert_normals')
     layout.prop(dds_options, 'premultiplied_alpha')
@@ -212,7 +212,7 @@ class DDS_OT_import_base(Operator):
         layout = self.layout
         layout.use_property_split = False
         layout.use_property_decorate = False
-        put_import_options(layout, context)
+        put_import_options(context, layout)
 
     def execute_base(self, context, files=None, directory=None, is_dir=False):
         if directory is None:
@@ -308,7 +308,18 @@ class DDS_PT_import_panel(bpy.types.Panel):
         layout = self.layout
         layout.operator(DDS_OT_import_dds.bl_idname, icon='TEXTURE_DATA')
         layout.operator(DDS_OT_import_dir.bl_idname, icon='TEXTURE_DATA')
-        put_import_options(layout, context)
+
+        # Draw options tab
+        win_m = bpy.context.window_manager.dds_panel_flags
+        show_flag = win_m.ui_import_opt
+        box = layout.box()
+        row = box.row(align=True)
+        row.alignment = 'LEFT'
+        row.prop(win_m, 'ui_import_opt', icon='DOWNARROW_HLT' if show_flag else 'RIGHTARROW', emboss=False)
+        if show_flag:
+            box.use_property_split = True
+            box.use_property_decorate = False
+            put_import_options(context, box)
 
 
 classes = (

@@ -70,9 +70,9 @@ jobs:
       - name: build shared library (for macOS)
         if: runner.os=='macOS'
         run: |
-          bash external/Texconv-Custom-DLL/shell_scripts/build_universal.sh
+          ./external/Texconv-Custom-DLL/shell_scripts/build_universal.sh
           cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon/directx
-          bash external/build_astcenc_macOS.sh
+          ./external/build_astcenc_macOS.sh
           cp external/astc-encoder/libastcenc* addons/blender_dds_addon/astcenc
 
       - name: build shared library (for Linux)

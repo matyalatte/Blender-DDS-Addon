@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Builds astc-encoder with cmake on Linux.
 # libastc-sse2-shared.so will be generated in ./astc-encoder/
 

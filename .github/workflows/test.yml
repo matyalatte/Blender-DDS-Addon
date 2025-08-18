@@ -91,9 +91,9 @@ jobs:
       - name: build shared library (for Unix)
         if: runner.os!='Windows'
         run: |
-          bash external/Texconv-Custom-DLL/shell_scripts/build_universal.sh
+          ./external/Texconv-Custom-DLL/shell_scripts/build_universal.sh
           cp external/Texconv-Custom-DLL/libtexconv.* addons/blender_dds_addon/directx
-          bash external/build_astcenc_${{ runner.os }}.sh
+          ./external/build_astcenc_${{ runner.os }}.sh
           cp external/astc-encoder/libastcenc* addons/blender_dds_addon/astcenc
 
       - name: Set up Python v${{ env.python-version }}

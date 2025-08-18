@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Builds astc-encoder with cmake on macOS.
 # libastc-shared.dylib will be generated in ./astc-encoder/
 

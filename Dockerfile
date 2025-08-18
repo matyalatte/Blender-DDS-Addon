@@ -30,7 +30,7 @@ RUN git submodule update --init --recursive --recommend-shallow --depth 1
 # Build
 WORKDIR /Blender-DDS-Addon
 RUN mkdir bin && \
-    bash external/Texconv-Custom-DLL/shell_scripts/build.sh && \
+    ./external/Texconv-Custom-DLL/shell_scripts/build.sh && \
     cp external/Texconv-Custom-DLL/libtexconv.* bin && \
-    bash external/build_astcenc_Linux.sh && \
+    ./external/build_astcenc_Linux.sh && \
     cp external/astc-encoder/libastcenc* bin

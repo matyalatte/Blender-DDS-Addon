@@ -17,7 +17,8 @@ from ..directx.texconv import Texconv
 from ..astcenc.astcenc import Astcenc
 from .bpy_util import (get_image_editor_space,
                        load_texture, load_texture_from_buffer,
-                       dds_properties_exist, flush_stdout, dxgi_to_dtype)
+                       dds_properties_exist, flush_stdout,
+                       dxgi_to_dtype, get_os_error_msg)
 from .custom_properties import DDS_FMT_NAMES
 
 
@@ -218,10 +219,9 @@ class DDS_OT_import_base(Operator):
         if directory is None:
             raise RuntimeError('"self.directory" is not specified. This is unexpected.')
 
-        texconv = Texconv()
-        astcenc = Astcenc()
-
         try:
+            texconv = Texconv()
+            astcenc = Astcenc()
             start_time = time.time()
             if is_dir:
                 # For DDS_OT_import_dir
@@ -246,7 +246,14 @@ class DDS_OT_import_base(Operator):
             self.report({'INFO'}, m)
             ret = {'FINISHED'}
 
+        except OSError as e:
+            # Maybe arm64 build is running on x64 machine.
+            msg = get_os_error_msg(e)
+            self.report({'ERROR'}, msg)
+            ret = {'CANCELLED'}
+
         except Exception as e:
+            # Unexpected error
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}

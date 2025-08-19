@@ -6,7 +6,7 @@ import bpy
 from .import_dds import import_dds
 from ..directx.texconv import Texconv
 from ..astcenc.astcenc import Astcenc
-from .bpy_util import flush_stdout
+from .bpy_util import flush_stdout, get_os_error_msg
 
 
 def is_dds_panel(context):
@@ -30,10 +30,9 @@ class DDS_OT_drag_drop_import(bpy.types.Operator):
         if not self.directory or not self.files:
             return {'CANCELLED'}
 
-        texconv = Texconv()
-        astcenc = Astcenc()
-
         try:
+            texconv = Texconv()
+            astcenc = Astcenc()
             start_time = time.time()
             count = 0
 
@@ -54,7 +53,14 @@ class DDS_OT_drag_drop_import(bpy.types.Operator):
             self.report({'INFO'}, m)
             ret = {'FINISHED'}
 
+        except OSError as e:
+            # Maybe arm64 build is running on x64 machine.
+            msg = get_os_error_msg(e)
+            self.report({'ERROR'}, msg)
+            ret = {'CANCELLED'}
+
         except Exception as e:
+            # Unexpected error
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}

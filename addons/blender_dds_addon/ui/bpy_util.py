@@ -1,4 +1,7 @@
 import os
+import platform
+import traceback
+
 import bpy
 import numpy as np
 
@@ -151,3 +154,22 @@ def dxgi_to_dtype(fmt):
     if fmt == "R16G16B16A16_FLOAT":
         return np.float16
     raise RuntimeError(f"dxgi_to_dtype() does not support {fmt}.")
+
+
+def get_os_error_msg(exception):
+    # Get an error message for OS errors.
+    if platform.system() == 'Windows' and exception.winerror == 193:
+        # Invalid architecture
+        if platform.machine().lower() == 'arm64':
+            machine_arch = 'arm64'
+            addon_arch = 'x64'
+        else:
+            machine_arch = 'x64'
+            addon_arch = 'arm64'
+        msg = f"{addon_arch} build does not work on your machine. Get {machine_arch} version of the DDS addon."
+        print(f"Error: {msg}")
+    else:
+        # Unexpected error
+        print(traceback.format_exc())
+        msg = exception.args[0]
+    return msg

@@ -16,7 +16,8 @@ from ..directx.dxgi_format import DXGI_FORMAT
 from ..directx.texconv import Texconv
 from ..astcenc.astcenc import Astcenc
 from .bpy_util import (save_texture, texture_to_buffer, dxgi_to_dtype,
-                       dds_properties_exist, get_image_editor_space, flush_stdout)
+                       dds_properties_exist, get_image_editor_space,
+                       flush_stdout, get_os_error_msg)
 from .texture_list import draw_texture_list
 
 
@@ -247,10 +248,9 @@ class DDS_OT_export_base(Operator):
         put_export_options(context, layout)
 
     def execute_base(self, context, file=None, directory=None, is_dir=False):
-        texconv = Texconv()
-        astcenc = Astcenc()
-
         try:
+            texconv = Texconv()
+            astcenc = Astcenc()
             start_time = time.time()
 
             if is_dir:
@@ -290,7 +290,14 @@ class DDS_OT_export_base(Operator):
             self.report({'INFO'}, m)
             ret = {'FINISHED'}
 
+        except OSError as e:
+            # Maybe arm64 build is running on x64 machine.
+            msg = get_os_error_msg(e)
+            self.report({'ERROR'}, msg)
+            ret = {'CANCELLED'}
+
         except Exception as e:
+            # Unexpected error
             print(traceback.format_exc())
             self.report({'ERROR'}, e.args[0])
             ret = {'CANCELLED'}
